@@ -1,5 +1,5 @@
 {
-	"name": "your-module-name",
+	"name": "wisycom-mat",
 	"version": "0.1.0",
 	"main": "dist/main.js",
 	"type": "module",
@@ -16,21 +16,26 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-your-module-name.git"
+		"url": "git+https://github.com/phillipivan/companion-module-wisycom-mat.git"
 	},
 	"dependencies": {
-		"@companion-module/base": "~1.11.0"
+		"@companion-module/base": "~1.11.2",
+		"delay": "^6.0.0",
+		"p-queue": "~8.0.1"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.1.0",
-		"@types/node": "^22.6.1",
-		"eslint": "^9.11.1",
-		"husky": "^9.1.6",
+		"@types/node": "^22.10.1",
+		"eslint": "^9.16.0",
+		"husky": "^9.1.7",
 		"lint-staged": "^15.2.10",
-		"prettier": "^3.3.3",
+		"prettier": "^3.4.2",
 		"rimraf": "^6.0.1",
-		"typescript": "~5.5.4",
-		"typescript-eslint": "^8.7.0"
+		"typescript": "~5.7.2",
+		"typescript-eslint": "^8.17.0"
+	},
+	"engines": {
+		"node": "^22.11"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json",
 	"lint-staged": {
@@ -41,5 +46,5 @@
 			"yarn lint:raw --fix"
 		]
 	},
-	"packageManager": "yarn@4.4.1"
+	"packageManager": "yarn@4.5.3"
 }
