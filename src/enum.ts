@@ -1,15 +1,15 @@
-export enum matBofEof {
+export enum MatBofEof {
 	BOF = 0xc0,
 	EOF = 0xc1,
 	ESC = 0x7d,
 }
 
-export enum matSrc {
+export enum MatSrc {
 	PC = 0xfe,
 	Device = 0x00,
 }
 
-export enum matDst {
+export enum MatDst {
 	PC = 0xfe,
 	DEVICE = 0x00,
 	ZONE1 = 0x01,
@@ -22,16 +22,16 @@ export enum matDst {
 	ZONE8 = 0x08,
 }
 
-export type matDstZones = Exclude<matDst, matDst.PC | matDst.DEVICE>
+export type MatDstZones = Exclude<MatDst, MatDst.PC | MatDst.DEVICE>
 
-export enum matMsgType {
+export enum MatMsgType {
 	CMD = 0x00,
 	CMD_ACK = 0x01,
 	EVT = 0x02,
 	EVT_ACK = 0x03,
 }
 
-export enum matMsgStatus {
+export enum MatMsgStatus {
 	OK = 0x00,
 	NET_ERROR = 0x01,
 	NET_BUSY = 0x02,
@@ -47,7 +47,7 @@ export enum matMsgStatus {
 	DEV_NOT_PRESENT = 0x0c, // Assumed doc says 0x0A as above
 }
 
-export enum matCmd {
+export enum MatCmd {
 	OPEN = 0x00,
 	CLOSE = 0x01,
 	ID = 0x02,
@@ -65,7 +65,7 @@ export enum matCmd {
 	ANTENNA = 0x5d,
 }
 
-export enum subCmdAntenna {
+export enum SubCmdAntenna {
 	MATRIX = 0x00,
 	ACTIVATE = 0x01,
 	DIVERSITY = 0x02,
@@ -108,12 +108,13 @@ export enum AntennaGainDiversity {
 	B = 0x01,
 }
 
-export interface matMessage {
-	src: matSrc
-	dst: matDst
+export interface MatMessage {
+	src: MatSrc
+	dst: MatDst
 	token: number
-	type: matMsgType
-	status: matMsgStatus
-	cmd: matCmd
+	type: MatMsgType
+	status: MatMsgStatus
+	cmd: MatCmd
+	subCmd?: SubCmdAntenna
 	payload: number[]
 }

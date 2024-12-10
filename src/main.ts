@@ -10,7 +10,7 @@ import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { matBofEof } from './enum.js'
+import { MatBofEof } from './enum.js'
 import { parseResponse } from './utils.js'
 import { MessageBus } from './messageBus.js'
 import { MatApi } from './api.js'
@@ -99,8 +99,8 @@ export class WisyComMATInstance extends InstanceBase<ModuleConfig> {
 					line: Buffer,
 					offset = 0
 				receiveBuffer = Buffer.from([...receiveBuffer, ...chunk])
-				while ((i = receiveBuffer.indexOf(matBofEof.EOF, offset)) !== -1) {
-					const start = receiveBuffer.indexOf(matBofEof.BOF, offset)
+				while ((i = receiveBuffer.indexOf(MatBofEof.EOF, offset)) !== -1) {
+					const start = receiveBuffer.indexOf(MatBofEof.BOF, offset)
 					if (start !== -1) {
 						line = receiveBuffer.subarray(start, i - offset)
 						parseResponse(line, this)
