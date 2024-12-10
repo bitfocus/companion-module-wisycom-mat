@@ -92,6 +92,7 @@ export class WisyComMATInstance extends InstanceBase<ModuleConfig> {
 				this.log('info', `Connected to ${host}:${port}`)
 				//this.updateStatus(InstanceStatus.Ok, 'Connection Established')
 				this.msgBus.changeClearState(true)
+				this.msgBus.sendMsg(this.api.open(this.config.password)).catch(() => {})
 			})
 			this.socket.on('data', (chunk) => {
 				let i = 0,
