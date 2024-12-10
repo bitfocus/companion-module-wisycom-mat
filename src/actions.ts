@@ -1,6 +1,6 @@
-import type { ModuleInstance } from './main.js'
+import type { WisyComMATInstance } from './main.js'
 
-export function UpdateActions(self: ModuleInstance): void {
+export function UpdateActions(self: WisyComMATInstance): void {
 	self.setActionDefinitions({
 		sample_action: {
 			name: 'My First Action',

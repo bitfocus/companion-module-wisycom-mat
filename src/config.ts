@@ -5,6 +5,7 @@ export interface ModuleConfig {
 	port: number
 	model: MatModels
 	interval: number
+	password: string
 }
 
 export enum MatModels {
@@ -50,6 +51,14 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			min: 20,
 			max: 5000,
 			default: 32,
+		},
+		{
+			type: 'textinput',
+			id: 'password',
+			label: 'Password',
+			width: 4,
+			default: '',
+			regex: '/^.{0,8}$/',
 		},
 	]
 }

@@ -11,16 +11,18 @@ export enum matSrc {
 
 export enum matDst {
 	PC = 0xfe,
-	Device = 0x00,
-	Zone1 = 0x01,
-	Zone2 = 0x02,
-	Zone3 = 0x03,
-	Zone4 = 0x04,
-	Zone5 = 0x05,
-	Zone6 = 0x06,
-	Zone7 = 0x07,
-	Zone8 = 0x08,
+	DEVICE = 0x00,
+	ZONE1 = 0x01,
+	ZONE2 = 0x02,
+	ZONE3 = 0x03,
+	ZONE4 = 0x04,
+	ZONE5 = 0x05,
+	ZONE6 = 0x06,
+	ZONE7 = 0x07,
+	ZONE8 = 0x08,
 }
+
+export type matDstZones = Exclude<matDst, matDst.PC | matDst.DEVICE>
 
 export enum matMsgType {
 	CMD = 0x00,
@@ -42,7 +44,7 @@ export enum matMsgStatus {
 	CLOSED = 0x09,
 	EXECUTION_FAILURE = 0x0a,
 	BUSY = 0x0b, //Assumed doc says 0x0A as above
-	DEV_NOT_PRESENT = 0x0c, // Assumed doc says OxOA as above
+	DEV_NOT_PRESENT = 0x0c, // Assumed doc says 0x0A as above
 }
 
 export enum matCmd {
@@ -61,6 +63,49 @@ export enum matCmd {
 	SAVE_PAR = 0x59,
 	AUTO_STATUS = 0x5a,
 	ANTENNA = 0x5d,
+}
+
+export enum subCmdAntenna {
+	MATRIX = 0x00,
+	ACTIVATE = 0x01,
+	DIVERSITY = 0x02,
+	BOOST = 0x03,
+	GAIN = 0x04,
+	BOOST_DIAG = 0x06,
+}
+
+export enum MatBooleanChoices {
+	TRUE = 0x01,
+	FALSE = 0x00,
+}
+
+export enum AntennaMatrixChoices {
+	Matrix8_1Driver = 0x00,
+	Matrix8_4Driver = 0x01,
+	Matrix2_4_2Driver = 0x02,
+}
+
+export enum AntennaDiversityChoices {
+	A = 0x00,
+	B = 0x01,
+	AB = 0x02,
+}
+
+export enum AntennaBoostChoices {
+	OFF = 0x00,
+	A_ = 0x01,
+	_B = 0x02,
+	AB = 0x03,
+	H_ = 0x04,
+	_H = 0x05,
+	HB = 0x06,
+	AH = 0x07,
+	HH = 0x08,
+}
+
+export enum AntennaGainDiversity {
+	A = 0x00,
+	B = 0x01,
 }
 
 export interface matMessage {
