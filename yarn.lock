@@ -348,12 +348,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=20, @types/node@npm:^22.10.1":
+"@types/node@npm:*, @types/node@npm:>=20":
   version: 22.10.1
   resolution: "@types/node@npm:22.10.1"
   dependencies:
     undici-types: "npm:~6.20.0"
   checksum: 10c0/0fbb6d29fa35d807f0223a4db709c598ac08d66820240a2cd6a8a69b8f0bc921d65b339d850a666b43b4e779f967e6ed6cf6f0fca3575e08241e6b900364c234
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.10.2":
+  version: 22.10.2
+  resolution: "@types/node@npm:22.10.2"
+  dependencies:
+    undici-types: "npm:~6.20.0"
+  checksum: 10c0/2c7b71a040f1ef5320938eca8ebc946e6905caa9bbf3d5665d9b3774a8d15ea9fab1582b849a6d28c7fc80756a62c5666bc66b69f42f4d5dafd1ccb193cdb4ac
+  languageName: node
+  linkType: hard
+
+"@types/pngjs@npm:^6.0.1":
+  version: 6.0.5
+  resolution: "@types/pngjs@npm:6.0.5"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/11979d0690e774046d3a1e8cfc613a6b53a613909d81c93831cf253800e93ba1a2d47950979b523aebd4fc023351b644d7f4aa2dfcc027c70816a2968420e7da
   languageName: node
   linkType: hard
 
@@ -950,6 +968,16 @@ __metadata:
   version: 12.1.0
   resolution: "commander@npm:12.1.0"
   checksum: 10c0/6e1996680c083b3b897bfc1cfe1c58dfbcd9842fd43e1aaf8a795fbc237f65efcc860a3ef457b318e73f29a4f4a28f6403c3d653d021d960e4632dd45bde54a9
+  languageName: node
+  linkType: hard
+
+"companion-module-utils@npm:~0.5.0":
+  version: 0.5.0
+  resolution: "companion-module-utils@npm:0.5.0"
+  dependencies:
+    "@types/pngjs": "npm:^6.0.1"
+    pngjs: "npm:^7.0.0"
+  checksum: 10c0/ad8ec64ba33823fc5cbb4fba0a815f1a3897c1e337dd4897c1c6bfef6c33fa0c193aeda09ac451afe369c1ce85ca5d7b2250c554d7ab516118790d153a2c57af
   languageName: node
   linkType: hard
 
@@ -2395,6 +2423,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pngjs@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "pngjs@npm:7.0.0"
+  checksum: 10c0/0d4c7a0fd476a9c33df7d0a2a73e1d56537628a668841f6995c2bca070cf30819f9254a64363266bc14ef2fee47659dd3b4f2b18eec7ab65143015139f497b38
+  languageName: node
+  linkType: hard
+
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1
   resolution: "prelude-ls@npm:1.2.1"
@@ -3065,7 +3100,8 @@ __metadata:
   dependencies:
     "@companion-module/base": "npm:~1.11.2"
     "@companion-module/tools": "npm:^2.1.0"
-    "@types/node": "npm:^22.10.1"
+    "@types/node": "npm:^22.10.2"
+    companion-module-utils: "npm:~0.5.0"
     delay: "npm:^6.0.0"
     eslint: "npm:^9.16.0"
     husky: "npm:^9.1.7"
