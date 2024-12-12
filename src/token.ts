@@ -25,7 +25,7 @@ export class Token {
 	}
 
 	/**
-	 * Resets toaken value to 0
+	 * Resets token value to 0
 	 *
 	 */
 
