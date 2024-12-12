@@ -1,7 +1,7 @@
 import { combineRgb } from '@companion-module/base'
-import type { WisyComMATInstance } from './main.js'
+import type { WisycomMATInstance } from './main.js'
 
-export function UpdateFeedbacks(self: WisyComMATInstance): void {
+export function UpdateFeedbacks(self: WisycomMATInstance): void {
 	self.setFeedbackDefinitions({
 		ChannelState: {
 			name: 'Example Feedback',

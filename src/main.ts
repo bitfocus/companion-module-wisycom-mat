@@ -11,11 +11,15 @@ import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { MatBofEof } from './enum.js'
-import { parseResponse } from './utils.js'
 import { MessageBus } from './messageBus.js'
 import { MatApi } from './api.js'
 
-export class WisyComMATInstance extends InstanceBase<ModuleConfig> {
+/**
+ * Class for control of Wisycom MAT 244 / 288 RF Matrix
+ *
+ */
+
+export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	socket!: TCPHelper
 	public api: MatApi = new MatApi()
@@ -65,6 +69,13 @@ export class WisyComMATInstance extends InstanceBase<ModuleConfig> {
 		UpdateVariableDefinitions(this)
 	}
 
+	/**
+	 * Setup TCP Connection
+	 * @param host Host to connect to
+	 * @param port Port to connect on. Default: 2101
+	 *
+	 */
+
 	async initTCP(host: string, port: number = 2101): Promise<void> {
 		let receiveBuffer: Buffer
 		if (this.msgBus) {
@@ -103,7 +114,7 @@ export class WisyComMATInstance extends InstanceBase<ModuleConfig> {
 					const start = receiveBuffer.indexOf(MatBofEof.BOF, offset)
 					if (start !== -1) {
 						line = receiveBuffer.subarray(start, i - offset)
-						parseResponse(line, this)
+						this.api.parseResponse(line)
 						this.msgBus.changeClearState(true)
 					}
 					offset = i + 1
@@ -116,4 +127,4 @@ export class WisyComMATInstance extends InstanceBase<ModuleConfig> {
 	}
 }
 
-runEntrypoint(WisyComMATInstance, UpgradeScripts)
+runEntrypoint(WisycomMATInstance, UpgradeScripts)

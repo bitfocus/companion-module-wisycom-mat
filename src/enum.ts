@@ -1,13 +1,28 @@
+/**
+ * Reserved characters for special use in MAT messages
+ *
+ */
+
 export enum MatBofEof {
 	BOF = 0xc0,
 	EOF = 0xc1,
 	ESC = 0x7d,
 }
 
+/**
+ * Origin of message
+ *
+ */
+
 export enum MatSrc {
 	PC = 0xfe,
 	Device = 0x00,
 }
+
+/**
+ * Destination of message
+ *
+ */
 
 export enum MatDst {
 	PC = 0xfe,
@@ -22,7 +37,17 @@ export enum MatDst {
 	ZONE8 = 0x08,
 }
 
+/**
+ * Destination of message, limited to Antenna zones
+ *
+ */
+
 export type MatDstZones = Exclude<MatDst, MatDst.PC | MatDst.DEVICE>
+
+/**
+ * Message Type: Command, Event, and their ACKs
+ *
+ */
 
 export enum MatMsgType {
 	CMD = 0x00,
@@ -30,6 +55,11 @@ export enum MatMsgType {
 	EVT = 0x02,
 	EVT_ACK = 0x03,
 }
+
+/**
+ * Message Status
+ *
+ */
 
 export enum MatMsgStatus {
 	OK = 0x00,
@@ -46,6 +76,11 @@ export enum MatMsgStatus {
 	BUSY = 0x0b, //Assumed doc says 0x0A as above
 	DEV_NOT_PRESENT = 0x0c, // Assumed doc says 0x0A as above
 }
+
+/**
+ * MAT Commands
+ *
+ */
 
 export enum MatCmd {
 	OPEN = 0x00,
@@ -65,6 +100,11 @@ export enum MatCmd {
 	ANTENNA = 0x5d,
 }
 
+/**
+ * MAT Antenna Sub Commands
+ *
+ */
+
 export enum SubCmdAntenna {
 	MATRIX = 0x00,
 	ACTIVATE = 0x01,
@@ -74,10 +114,20 @@ export enum SubCmdAntenna {
 	BOOST_DIAG = 0x06,
 }
 
+/**
+ * MAT Boolean to Hex Mapping
+ *
+ */
+
 export enum MatBooleanChoices {
 	TRUE = 0x01,
 	FALSE = 0x00,
 }
+
+/**
+ * Antenna Matrix Configuration
+ *
+ */
 
 export enum AntennaMatrixChoices {
 	Matrix8_1Driver = 0x00,
@@ -85,11 +135,21 @@ export enum AntennaMatrixChoices {
 	Matrix2_4_2Driver = 0x02,
 }
 
+/**
+ * Antenna Diversity Choices
+ *
+ */
+
 export enum AntennaDiversityChoices {
 	A = 0x00,
 	B = 0x01,
 	AB = 0x02,
 }
+
+/**
+ * Antenna Boost Choices
+ *
+ */
 
 export enum AntennaBoostChoices {
 	OFF = 0x00,
@@ -103,18 +163,12 @@ export enum AntennaBoostChoices {
 	HH = 0x08,
 }
 
+/**
+ * Antenna Gain, Select A or B inputs
+ *
+ */
+
 export enum AntennaGainDiversity {
 	A = 0x00,
 	B = 0x01,
-}
-
-export interface MatMessage {
-	src: MatSrc
-	dst: MatDst
-	token: number
-	type: MatMsgType
-	status: MatMsgStatus
-	cmd: MatCmd
-	subCmd?: SubCmdAntenna
-	payload: number[]
 }

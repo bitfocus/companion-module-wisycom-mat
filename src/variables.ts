@@ -1,6 +1,6 @@
-import type { WisyComMATInstance } from './main.js'
+import type { WisycomMATInstance } from './main.js'
 
-export function UpdateVariableDefinitions(self: WisyComMATInstance): void {
+export function UpdateVariableDefinitions(self: WisycomMATInstance): void {
 	self.setVariableDefinitions([
 		{ variableId: 'variable1', name: 'My first variable' },
 		{ variableId: 'variable2', name: 'My second variable' },
