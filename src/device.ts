@@ -43,10 +43,9 @@ export interface RfLevels {
 }
 
 export interface Temps {
-	ext: number
-	_8mv: number
-	_5mv: number
-	_12mv: number
+	main: number
+	rxA: number
+	rxB: number
 }
 
 export interface Voltages {
@@ -190,15 +189,24 @@ export class MatDevice {
 	public get temp(): Temps {
 		if (this.#device.temp) return this.#device.temp
 		return (this.#device.temp = {
-			ext: 0,
-			_12mv: 0,
-			_8mv: 0,
-			_5mv: 0,
+			main: 0,
+			rxA: 0,
+			rxB: 0,
 		})
 	}
 
 	public set temp(tmp: Temps) {
 		this.#device.temp = tmp
+	}
+
+	public get voltage(): Voltages {
+		if (this.#device.voltage) return this.#device.voltage
+		return (this.#device.voltage = {
+			ext: 0,
+			_12mv: 0,
+			_8mv: 0,
+			_5mv: 0,
+		})
 	}
 
 	public set voltage(volts: Voltages) {
