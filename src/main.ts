@@ -23,6 +23,7 @@ import { MatDevice } from './device.js'
 export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	socket!: TCPHelper
+	#isRecordingActions: boolean = false
 	public mat: MatDevice = new MatDevice()
 	public api: MatApi = new MatApi(this.mat)
 	private msgBus!: MessageBus
@@ -72,13 +73,34 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	/**
+	 * Set action recorder state
+	 *
+	 */
+
+	public handleStartStopRecordActions(isRecording: boolean): void {
+		this.#isRecordingActions = isRecording
+		console.log(this.#isRecordingActions)
+	}
+
+	/**
+	 * Add message to queue and send
+	 * @param msg Buffer to be sent
+	 * @param priority Queue priority, defaults to 0
+	 *
+	 */
+
+	public async sendMessage(msg: Buffer, priority?: number): Promise<void> {
+		await this.msgBus.sendMsg(msg, priority)
+	}
+
+	/**
 	 * Setup TCP Connection
 	 * @param host Host to connect to
 	 * @param port Port to connect on. Default: 2101
 	 *
 	 */
 
-	async initTCP(host: string, port: number = 2101): Promise<void> {
+	private async initTCP(host: string, port: number = 2101): Promise<void> {
 		let receiveBuffer: Buffer
 		if (this.msgBus) {
 			this.msgBus.stopTimeout()

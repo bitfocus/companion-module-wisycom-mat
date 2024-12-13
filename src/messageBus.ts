@@ -65,11 +65,11 @@ export class MessageBus {
 	/**
 	 * Add message to outbound queue
 	 * @param msg Message buffer to be queued
-	 * @param prio Queue Priority to use, default = 0
+	 * @param priority Queue Priority to use, default = 0
 	 *
 	 */
 
-	public async sendMsg(msg: Buffer, prio = 0): Promise<void> {
+	public async sendMsg(msg: Buffer, priority = 0): Promise<void> {
 		await this.#queue.add(
 			async () => {
 				while (!this.isClearToTx) {
@@ -80,7 +80,7 @@ export class MessageBus {
 					this.startTimeout()
 				}
 			},
-			{ priority: prio },
+			{ priority: priority },
 		)
 	}
 
