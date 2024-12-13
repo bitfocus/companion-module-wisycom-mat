@@ -10,6 +10,17 @@ export enum MatBofEof {
 }
 
 /**
+ * Mat App Version Type
+ *
+ */
+
+export enum MatVersionType {
+	DEBUG = 0x64,
+	RELEASE = 0x72,
+	PRODUCTION_RELEASE = 0xff,
+}
+
+/**
  * Origin of message
  *
  */
@@ -171,4 +182,17 @@ export enum AntennaBoostChoices {
 export enum AntennaGainDiversity {
 	A = 0x00,
 	B = 0x01,
+}
+
+export enum AntennaZoneColors {
+	OFF = 0x00,
+	RED = 0x01,
+	GREEN = 0x02,
+	BLUE = 0x03,
+}
+
+export enum AntennaAlarmLed {
+	OFF = 0x00,
+	ERROR = 0x01,
+	WARNING = 0x02,
 }

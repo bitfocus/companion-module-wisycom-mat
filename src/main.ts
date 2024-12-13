@@ -13,6 +13,7 @@ import { UpdateFeedbacks } from './feedbacks.js'
 import { MatBofEof } from './enum.js'
 import { MessageBus } from './messageBus.js'
 import { MatApi } from './api.js'
+import { MatDevice } from './device.js'
 
 /**
  * Class for control of Wisycom MAT 244 / 288 RF Matrix
@@ -22,7 +23,8 @@ import { MatApi } from './api.js'
 export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	socket!: TCPHelper
-	public api: MatApi = new MatApi()
+	public mat: MatDevice = new MatDevice()
+	public api: MatApi = new MatApi(this.mat)
 	private msgBus!: MessageBus
 	constructor(internal: unknown) {
 		super(internal)

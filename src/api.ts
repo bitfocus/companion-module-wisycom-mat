@@ -12,6 +12,7 @@ import {
 	AntennaDiversityChoices,
 	AntennaBoostChoices,
 } from './enum.js'
+import { MatDevice } from './device.js'
 import { Token } from './token.js'
 
 /**
@@ -90,8 +91,11 @@ function buildMessage(msg: MatMessage): Buffer {
 
 export class MatApi {
 	#token: Token = new Token(0)
+	public mat!: MatDevice
 	public messages: Map<number, MatMessage> = new Map<number, MatMessage>()
-	constructor() {}
+	constructor(mat: MatDevice) {
+		this.mat = mat
+	}
 
 	/**
 	 * Build message object with all required elements. Adds to this.messages map
