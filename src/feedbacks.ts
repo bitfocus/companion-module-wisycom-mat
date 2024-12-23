@@ -16,7 +16,7 @@ export enum FeedbackId {
 export function UpdateFeedbacks(self: WisycomMATInstance): void {
 	const zones: { id: MatDst; label: string }[] = []
 	for (let i = 1; i <= 8; i++) {
-		zones.push({ id: i, label: `${i}: ${self.mat.getZone(i).name}` })
+		zones.push({ id: i, label: `${i}: ${self.mat.getZone(i).name.trim()}` })
 	}
 
 	const feedbacks: { [id in FeedbackId]: CompanionFeedbackDefinition | undefined } = {

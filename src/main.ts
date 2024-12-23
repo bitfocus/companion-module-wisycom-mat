@@ -10,10 +10,11 @@ import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { MatBofEof } from './enum.js'
+import { MatBofEof, MatDst } from './enum.js'
 import { MessageBus } from './messageBus.js'
 import { MatApi } from './api.js'
 import { MatDevice } from './device.js'
+import { StatusManager } from './status.js'
 
 /**
  * Class for control of Wisycom MAT 244 / 288 RF Matrix
@@ -24,6 +25,7 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	socket!: TCPHelper
 	#isRecordingActions: boolean = false
+	#statusManager = new StatusManager(this, { status: InstanceStatus.Connecting, message: 'Initialising' }, 2000)
 	public mat: MatDevice = new MatDevice()
 	public api: MatApi = new MatApi(this.mat)
 	private msgBus!: MessageBus
@@ -36,23 +38,24 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	}
 	// When module gets deleted
 	async destroy(): Promise<void> {
-		this.log('debug', `destroy ${this.label}`)
+		this.log('debug', `destroy ${this.id}:${this.label}`)
 		this.msgBus.stopTimeout()
 		if (this.socket) {
 			await this.msgBus.sendMsg(this.api.close())
 			this.socket.destroy()
 		}
+		this.#statusManager.destroy()
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.config = config
 
-		this.updateStatus(InstanceStatus.Connecting)
+		this.#statusManager.updateStatus(InstanceStatus.Connecting)
 
 		this.updateActions() // export actions
 		this.updateFeedbacks() // export feedbacks
 		this.updateVariableDefinitions() // export variable definitions
-		this.initTCP(config.host, config.port).catch(() => {})
+		await this.initTCP(config.host, config.port, config.password)
 	}
 
 	// Return config fields for web config
@@ -97,39 +100,45 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	 * Setup TCP Connection
 	 * @param host Host to connect to
 	 * @param port Port to connect on. Default: 2101
+	 * @param password Password for MAT
 	 *
 	 */
 
-	private async initTCP(host: string, port: number = 2101): Promise<void> {
+	private async initTCP(host: string, port: number = 2101, password: string = ''): Promise<void> {
 		let receiveBuffer: Buffer
 		if (this.msgBus) {
 			this.msgBus.stopTimeout()
 			this.msgBus.clearQueue()
 		}
-		if (this.socket.isConnected || this.socket.isConnecting) {
+		if (this.socket !== undefined && (this.socket.isConnected || this.socket.isConnecting)) {
 			await this.msgBus.sendMsg(this.api.close())
 			this.socket.destroy()
 		}
-		if (this.config.host) {
-			this.log('debug', `Connecting to MAT: ${host}:${port}`)
+		if (host !== undefined && host !== '') {
+			this.log('info', `Connecting to MAT: ${host}:${port}`)
 
-			this.updateStatus(InstanceStatus.Connecting, `Connecting to MAT: ${host}`)
+			this.#statusManager.updateStatus(InstanceStatus.Connecting, `Connecting to MAT: ${host}`)
 			this.socket = new TCPHelper(host, port)
 			this.msgBus = new MessageBus(500, this.socket)
 			this.socket.on('status_change', (status, message) => {
-				this.updateStatus(status, message)
+				this.#statusManager.updateStatus(status, message)
 			})
 			this.socket.on('error', (err) => {
 				this.log('error', `Network error:\n ${JSON.stringify(err)}`)
-				//this.updateStatus(InstanceStatus.ConnectionFailure, err.message)
+				//this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure, err.message)
 			})
 			this.socket.on('connect', () => {
 				this.log('info', `Connected to ${host}:${port}`)
-				//this.updateStatus(InstanceStatus.Ok, 'Connection Established')
+				//this.#statusManager.updateStatus(InstanceStatus.Ok, 'Connection Established')
 				this.msgBus.changeClearState(true)
-				this.msgBus.sendMsg(this.api.open(this.config.password)).catch(() => {})
+				this.msgBus.sendMsg(this.api.open(password)).catch(() => {})
+				this.msgBus.sendMsg(this.api.id()).catch(() => {})
+				this.msgBus.sendMsg(this.api.name(MatDst.DEVICE)).catch(() => {})
+				this.msgBus.sendMsg(this.api.appver()).catch(() => {})
+				this.msgBus.sendMsg(this.api.serial()).catch(() => {})
 			})
 			this.socket.on('data', (chunk) => {
+				this.log('debug', `Data recieved: ${chunk.toString()}`)
 				let i = 0,
 					line: Buffer,
 					offset = 0
@@ -146,7 +155,7 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 				receiveBuffer = receiveBuffer.subarray(offset)
 			})
 		} else {
-			this.updateStatus(InstanceStatus.BadConfig, 'No Host')
+			this.#statusManager.updateStatus(InstanceStatus.BadConfig, 'No Host')
 		}
 	}
 }

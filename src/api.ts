@@ -38,14 +38,16 @@ interface MatMessage {
 
 function calcChecksum(msg: number[]): number {
 	let checksum = 0
-	for (let i = 0; i < msg.length; i++) {
+	const length = msg.length
+	// start at 1 to skip BOF
+	for (let i = 1; i < length; i++) {
 		checksum ^= msg[i]
 	}
 	return checksum
 }
 
 /**
- * Stuff bytes that match BOF, EOF, ES
+ * Stuff bytes that match BOF, EOF, ESC
  * @param byte byte value to be stuffed
  * @returns array stuffed values, 1 or 2 bytes
  */

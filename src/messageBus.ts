@@ -54,11 +54,11 @@ export class MessageBus {
 	}
 
 	/**
-	 * Set & return the value of this.#clearToTx
-	 *
+	 * Set & return the value of this.#clearToTx.
+	 * Called without argument it will flip the current state
 	 */
 
-	public changeClearState(state: boolean): boolean {
+	public changeClearState(state: boolean = !this.#clearToTx): boolean {
 		return (this.#clearToTx = state)
 	}
 
@@ -69,19 +69,23 @@ export class MessageBus {
 	 *
 	 */
 
-	public async sendMsg(msg: Buffer, priority = 0): Promise<void> {
-		await this.#queue.add(
-			async () => {
+	public async sendMsg(msg: Buffer, priority = 0): Promise<boolean> {
+		return (await this.#queue.add(
+			async (): Promise<boolean> => {
 				while (!this.isClearToTx) {
-					await delay(20)
+					await delay(10)
 				}
 				if (this.#socket.isConnected) {
-					await this.#socket.send(msg)
+					console.log(`Sending: ${msg.toString()}`)
 					this.startTimeout()
+					return await this.#socket.send(msg)
+				} else {
+					console.log(`Not connected. Could not send: ${msg.toString()}`)
+					return false
 				}
 			},
 			{ priority: priority },
-		)
+		)) as boolean
 	}
 
 	/**
