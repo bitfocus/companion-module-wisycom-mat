@@ -1,6 +1,7 @@
 import type { TCPHelper } from '@companion-module/base'
 import delay from 'delay'
 import PQueue from 'p-queue'
+import { type Logger, LoggerLevel } from './logger.js'
 
 /**
  * Setup outbound message bus
@@ -15,10 +16,12 @@ export class MessageBus {
 	#timeout!: number
 	#socket!: TCPHelper
 	#queue: PQueue = new PQueue({ concurrency: 1, interval: 20, intervalCap: 1 })
-	constructor(timeout: number, socket: TCPHelper) {
+	#logger!: Logger
+	constructor(timeout: number, socket: TCPHelper, logger: Logger) {
 		this.#clearToTx = true
 		this.#socket = socket
 		this.#timeout = Math.round(timeout)
+		this.#logger = logger
 	}
 
 	/**
@@ -76,11 +79,11 @@ export class MessageBus {
 					await delay(10)
 				}
 				if (this.#socket.isConnected) {
-					console.log(`Sending: ${msg.toString()}`)
+					this.#logger.log(LoggerLevel.Console, `Sending: ${msg.toString()}`)
 					this.startTimeout()
 					return await this.#socket.send(msg)
 				} else {
-					console.log(`Not connected. Could not send: ${msg.toString()}`)
+					this.#logger.log(LoggerLevel.Console, `Not connected. Could not send: ${msg.toString()}`)
 					return false
 				}
 			},

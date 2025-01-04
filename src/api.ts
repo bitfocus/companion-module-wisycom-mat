@@ -14,6 +14,7 @@ import {
 } from './enum.js'
 import { MatDevice } from './device.js'
 import { Token } from './token.js'
+import { type Logger, LoggerLevel } from './logger.js'
 
 /**
  * Object containing all data elements to required to build a message buffer
@@ -93,10 +94,12 @@ function buildMessage(msg: MatMessage): Buffer {
 
 export class MatApi {
 	#token: Token = new Token(0)
+	#logger!: Logger
 	public mat!: MatDevice
 	public messages: Map<number, MatMessage> = new Map<number, MatMessage>()
-	constructor(mat: MatDevice) {
+	constructor(mat: MatDevice, logger: Logger) {
 		this.mat = mat
+		this.#logger = logger
 	}
 
 	/**
@@ -415,7 +418,7 @@ export class MatApi {
 	 */
 
 	public parseResponse(msg: Buffer): void {
-		console.log('debug', `Message Recieved ${msg.toString()}`)
+		this.#logger.log(LoggerLevel.Debug, `Message Recieved ${msg.toString()}`)
 		const data: number[] = []
 		// reverse byte stuffing
 		for (let i = 0; i < msg.length; i++) {
@@ -427,6 +430,6 @@ export class MatApi {
 			}
 		}
 		const cleanMsg: Buffer = Buffer.from(data)
-		console.log(cleanMsg)
+		this.#logger.log(LoggerLevel.Console, cleanMsg)
 	}
 }

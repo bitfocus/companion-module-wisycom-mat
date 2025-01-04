@@ -14,6 +14,7 @@ import { MatBofEof, MatDst } from './enum.js'
 import { MessageBus } from './messageBus.js'
 import { MatApi } from './api.js'
 import { MatDevice } from './device.js'
+import { Logger, LoggerLevel } from './logger.js'
 import { StatusManager } from './status.js'
 
 /**
@@ -27,7 +28,8 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	#isRecordingActions: boolean = false
 	#statusManager = new StatusManager(this, { status: InstanceStatus.Connecting, message: 'Initialising' }, 2000)
 	public mat: MatDevice = new MatDevice()
-	public api: MatApi = new MatApi(this.mat)
+	public logger: Logger = new Logger(this)
+	public api: MatApi = new MatApi(this.mat, this.logger)
 	private msgBus!: MessageBus
 	constructor(internal: unknown) {
 		super(internal)
@@ -38,7 +40,7 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 	}
 	// When module gets deleted
 	async destroy(): Promise<void> {
-		this.log('debug', `destroy ${this.id}:${this.label}`)
+		this.logger.log(LoggerLevel.Debug, `destroy ${this.id}:${this.label}`)
 		this.msgBus.stopTimeout()
 		if (this.socket) {
 			await this.msgBus.sendMsg(this.api.close())
@@ -49,7 +51,7 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.config = config
-
+		this.logger = new Logger(this, config.logging)
 		this.#statusManager.updateStatus(InstanceStatus.Connecting)
 
 		this.updateActions() // export actions
@@ -82,7 +84,7 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 
 	public handleStartStopRecordActions(isRecording: boolean): void {
 		this.#isRecordingActions = isRecording
-		console.log(this.#isRecordingActions)
+		this.logger.log(LoggerLevel.Debug, ` Action Recorder State Change ${this.#isRecordingActions}`)
 	}
 
 	/**
@@ -115,20 +117,20 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 			this.socket.destroy()
 		}
 		if (host !== undefined && host !== '') {
-			this.log('info', `Connecting to MAT: ${host}:${port}`)
+			this.logger.log(LoggerLevel.Information, `Connecting to MAT: ${host}:${port}`)
 
 			this.#statusManager.updateStatus(InstanceStatus.Connecting, `Connecting to MAT: ${host}`)
 			this.socket = new TCPHelper(host, port)
-			this.msgBus = new MessageBus(500, this.socket)
+			this.msgBus = new MessageBus(500, this.socket, this.logger)
 			this.socket.on('status_change', (status, message) => {
 				this.#statusManager.updateStatus(status, message)
 			})
 			this.socket.on('error', (err) => {
-				this.log('error', `Network error:\n ${JSON.stringify(err)}`)
+				this.logger.log(LoggerLevel.Error, `Network error:\n ${JSON.stringify(err)}`)
 				//this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure, err.message)
 			})
 			this.socket.on('connect', () => {
-				this.log('info', `Connected to ${host}:${port}`)
+				this.logger.log(LoggerLevel.Information, `Connected to ${host}:${port}`)
 				//this.#statusManager.updateStatus(InstanceStatus.Ok, 'Connection Established')
 				this.msgBus.changeClearState(true)
 				this.msgBus.sendMsg(this.api.open(password)).catch(() => {})
@@ -138,7 +140,7 @@ export class WisycomMATInstance extends InstanceBase<ModuleConfig> {
 				this.msgBus.sendMsg(this.api.serial()).catch(() => {})
 			})
 			this.socket.on('data', (chunk) => {
-				this.log('debug', `Data recieved: ${chunk.toString()}`)
+				this.logger.log(LoggerLevel.Debug, `Data recieved: ${chunk.toString()}`)
 				let i = 0,
 					line: Buffer,
 					offset = 0
