@@ -36,7 +36,6 @@ export class Logger {
 		if (level > this.#minLogLevel) return false
 		if (level === LoggerLevel.Console) {
 			console.log(logData)
-			return true
 		} else {
 			const logLevel =
 				level === LoggerLevel.Error
@@ -47,8 +46,7 @@ export class Logger {
 							? 'info'
 							: 'debug'
 			this._self.log(logLevel, logData)
-			return true
 		}
-		return false
+		return true
 	}
 }
