@@ -1,9 +1,7 @@
-import type { WisycomMATInstance } from './main.js'
+//import { createModuleLogger } from '@companion-module/base'
+import type WisycomMATInstance from './main.js'
 
-export function UpdateVariableDefinitions(self: WisycomMATInstance): void {
-	self.setVariableDefinitions([
-		{ variableId: 'variable1', name: 'My first variable' },
-		{ variableId: 'variable2', name: 'My second variable' },
-		{ variableId: 'variable3', name: 'Another variable' },
-	])
+export function UpdateVariableDefinitions(_self: WisycomMATInstance): void {
+	//const logger = createModuleLogger('Variables')
+	//self.setVariableDefinitions()
 }

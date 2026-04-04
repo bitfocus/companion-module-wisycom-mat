@@ -1,13 +1,15 @@
 import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
-import { LoggerLevel } from './logger.js'
 
-export interface ModuleConfig {
+export type ModuleConfig = {
 	host: string
 	port: number
 	model: MatModels
 	interval: number
 	password: string
-	logging: LoggerLevel
+}
+
+export type ModuleSecrets = {
+	password: string
 }
 
 export enum MatModels {
@@ -55,27 +57,12 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			default: 32,
 		},
 		{
-			type: 'textinput',
+			type: 'secret-text',
 			id: 'password',
 			label: 'Password',
 			width: 4,
 			default: '',
 			regex: '/^.{0,8}$/',
-		},
-		{
-			type: 'dropdown',
-			id: 'logging',
-			label: 'Minimum Log Level',
-			default: LoggerLevel.Information,
-			choices: [
-				{ id: LoggerLevel.Error, label: 'Error' },
-				{ id: LoggerLevel.Warning, label: 'Warning' },
-				{ id: LoggerLevel.Information, label: 'Information' },
-				{ id: LoggerLevel.Debug, label: 'Debug' },
-				{ id: LoggerLevel.Console, label: 'Console' },
-			],
-			allowCustom: false,
-			width: 8,
 		},
 	]
 }

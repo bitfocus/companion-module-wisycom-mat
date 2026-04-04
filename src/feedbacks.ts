@@ -1,25 +1,34 @@
-import { combineRgb } from '@companion-module/base'
-import type { CompanionFeedbackDefinition } from '@companion-module/base'
-import type { WisycomMATInstance } from './main.js'
-import { MatDst, MatDstZones } from './enum.js'
+// import { combineRgb, createModuleLogger, type CompanionFeedbackDefinitions } from '@companion-module/base'
+import type WisycomMATInstance from './main.js'
+// import { MatDst, MatDstZones } from './enum.js'
 
-const styles = {
+/* const styles = {
 	blackOnRed: {
 		bgcolor: combineRgb(255, 0, 0),
 		color: combineRgb(0, 0, 0),
 	},
-}
+} */
 
 export enum FeedbackId {
 	ZoneActive = 'zoneActive',
 }
-export function UpdateFeedbacks(self: WisycomMATInstance): void {
+
+export type FeedbackSchema = {
+	[FeedbackId.ZoneActive]: {
+		type: 'boolean'
+		options: {
+			zone: never
+		}
+	}
+}
+export function UpdateFeedbacks(_self: WisycomMATInstance): void {
+	/* 	const logger = createModuleLogger('Feedbacks')
 	const zones: { id: MatDst; label: string }[] = []
 	for (let i = 1; i <= 8; i++) {
 		zones.push({ id: i, label: `${i}: ${self.mat.getZone(i).name.trim()}` })
 	}
 
-	const feedbacks: { [id in FeedbackId]: CompanionFeedbackDefinition | undefined } = {
+	const feedbacks: CompanionFeedbackDefinitions<FeedbackSchema> = {
 		[FeedbackId.ZoneActive]: {
 			name: 'Antenna Zone Active',
 			type: 'boolean',
@@ -35,12 +44,12 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 				},
 			],
 			callback: (feedback) => {
-				return self.mat.getZone(feedback.options.zone as MatDstZones).active
+				return false //self.mat.getZone(feedback.options.zone as MatDstZones).active
 			},
-			subscribe: async (feedback) => {
+/* 			subscribe: async (feedback) => {
 				await self.sendMessage(self.api.antennaActivate(feedback.options.zone as MatDstZones))
 			},
 		},
 	}
-	self.setFeedbackDefinitions(feedbacks)
+	self.setFeedbackDefinitions(feedbacks) */
 }

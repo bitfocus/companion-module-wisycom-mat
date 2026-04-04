@@ -7,3 +7,4 @@ DEBUG-*
 /.yarn
 *.pdf
 *.zip
+*.tgz

@@ -1,5 +1,5 @@
-import { InstanceBase, InstanceStatus } from '@companion-module/base'
-import type { ModuleConfig } from './config.js'
+import { InstanceStatus } from '@companion-module/base'
+import type WisycomMATInstance from './main.js'
 
 export interface Status {
 	status: InstanceStatus
@@ -18,12 +18,12 @@ export interface Status {
 export class StatusManager {
 	#currentStatus: Status = { status: InstanceStatus.Disconnected, message: '' }
 	#newStatus: Status = { status: InstanceStatus.Disconnected, message: '' }
-	#parentInstance!: InstanceBase<ModuleConfig>
+	#parentInstance!: WisycomMATInstance
 	private debounceTimer: NodeJS.Timeout | undefined
 	#debounceTimeout: number = 1000
 
 	constructor(
-		self: InstanceBase<ModuleConfig>,
+		self: WisycomMATInstance,
 		initStatus: Status = { status: InstanceStatus.Disconnected, message: null },
 		debounceTimeout: number = 1000,
 	) {
