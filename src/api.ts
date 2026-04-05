@@ -28,12 +28,16 @@ export interface MatId {
 	hwRev: number
 }
 
+export type MatIdKeys = keyof MatId
+
 export interface MatVersions {
 	type: MatVersionType
 	minor: number
 	major: number
 	muProcessor: number
 }
+
+export type MatVersionsKeys = keyof MatVersions
 
 export interface MatLeds {
 	bootFailed: boolean
@@ -48,6 +52,8 @@ export interface MatLeds {
 	alarm: boolean
 }
 
+export type MatLedsKeys = keyof MatLeds
+
 export interface MatRfLevels {
 	a1: number
 	b1: number
@@ -55,11 +61,15 @@ export interface MatRfLevels {
 	b2: number
 }
 
+export type MatRfLevelsKeys = keyof MatRfLevels
+
 export interface MatTemps {
 	main: number
 	rxA: number
 	rxB: number
 }
+
+export type MatTempsKeys = keyof MatTemps
 
 export interface MatVoltages {
 	/** External supply voltage in mV */
@@ -72,10 +82,14 @@ export interface MatVoltages {
 	_12mv: number
 }
 
+export type MatVoltagesKeys = keyof MatVoltages
+
 export interface MatDisplay {
 	timeout: number
 	brightness: number
 }
+
+export type MatDisplayKeys = keyof MatDisplay
 
 export interface AntennaLeds {
 	pendingEvents: boolean
@@ -84,6 +98,8 @@ export interface AntennaLeds {
 	zone: AntennaZoneColors
 }
 
+export type AntennaLedsKeys = keyof AntennaLeds
+
 export interface AntennaDetails {
 	/** Boost amplifier voltage in mV, or null if the sensor is not present (non-diversity B path). */
 	voltage: number | null
@@ -91,6 +107,8 @@ export interface AntennaDetails {
 	current: number | null
 	gain: number
 }
+
+export type AntennaDetailsKeys = keyof AntennaDetails
 
 export interface AntennaZone {
 	name: string
@@ -103,6 +121,8 @@ export interface AntennaZone {
 		B: AntennaDetails
 	}
 }
+
+export type AntennaZoneKeys = keyof AntennaZone
 
 // ── Typed event map ───────────────────────────────────────────────────────────
 
