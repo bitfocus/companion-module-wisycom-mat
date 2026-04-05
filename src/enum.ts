@@ -1,7 +1,11 @@
+import type { MatApi, TypedDropdownChoice } from './api.js'
+
 /**
  * Reserved characters for special use in MAT messages
  *
  */
+
+type EnumDropdownChoice<T extends number> = TypedDropdownChoice<T>
 
 export enum MatBofEof {
 	BOF = 0xc0,
@@ -146,6 +150,24 @@ export enum AntennaMatrixChoices {
 	Matrix2_4_2Driver = 0x02,
 }
 
+export const ANTENNA_MATRIX_CHOICES: Record<'MAT244' | 'MAT288', EnumDropdownChoice<AntennaMatrixChoices>[]> = {
+	MAT288: [
+		{ id: AntennaMatrixChoices.Matrix8_1Driver, label: 'Diversity Combiner 8:1 (+7dB)' },
+		{ id: AntennaMatrixChoices.Matrix8_4Driver, label: 'Diversity Combiner 8:4 (0dB)' },
+		{ id: AntennaMatrixChoices.Matrix2_4_2Driver, label: '2× Diversity Combiner 4:2' },
+	],
+	MAT244: [
+		{ id: AntennaMatrixChoices.Matrix8_1Driver, label: 'Combiner 8:1 (+7dB)' },
+		{ id: AntennaMatrixChoices.Matrix8_4Driver, label: 'Combiner 8:4 (0dB)' },
+		{ id: AntennaMatrixChoices.Matrix2_4_2Driver, label: 'Diversity Combiner 4:2 (+7dB)' },
+	],
+}
+
+export function antennaMatrixChoices(mat: MatApi): EnumDropdownChoice<AntennaMatrixChoices>[] {
+	const model = mat.id.model.includes('244') ? 'MAT244' : 'MAT288'
+	return ANTENNA_MATRIX_CHOICES[model]
+}
+
 /**
  * Antenna Diversity Choices
  *
@@ -156,6 +178,12 @@ export enum AntennaDiversityChoices {
 	B = 0x01,
 	AB = 0x02,
 }
+
+export const ANTENNA_DIVERSITY_CHOICES = [
+	{ id: AntennaDiversityChoices.A, label: 'A' },
+	{ id: AntennaDiversityChoices.B, label: 'B' },
+	{ id: AntennaDiversityChoices.AB, label: 'A+B' },
+] as const satisfies EnumDropdownChoice<AntennaDiversityChoices>[]
 
 /**
  * Antenna Boost Choices
@@ -174,6 +202,33 @@ export enum AntennaBoostChoices {
 	HH = 0x08,
 }
 
+export const ANTENNA_BOOST_CHOICES = [
+	{ id: AntennaBoostChoices.OFF, label: 'Off' },
+	{ id: AntennaBoostChoices.A_, label: 'A' },
+	{ id: AntennaBoostChoices._B, label: 'B' },
+	{ id: AntennaBoostChoices.AB, label: 'A+B' },
+	{ id: AntennaBoostChoices.H_, label: 'High A' },
+	{ id: AntennaBoostChoices._H, label: 'High B' },
+	{ id: AntennaBoostChoices.HB, label: 'High A + B' },
+	{ id: AntennaBoostChoices.AH, label: 'A + High B' },
+	{ id: AntennaBoostChoices.HH, label: 'High A + High B' },
+] as const satisfies EnumDropdownChoice<AntennaBoostChoices>[]
+
+// needs to be filtered when in Non diversity modes
+
+type AntennaBoostChoice = { id: AntennaBoostChoices; label: string }
+
+export function antennaBoostChoices(isDiversity: boolean): EnumDropdownChoice<AntennaBoostChoices>[] {
+	if (isDiversity) return ANTENNA_BOOST_CHOICES
+
+	return ANTENNA_BOOST_CHOICES.filter(
+		(choice: AntennaBoostChoice) =>
+			choice.id === AntennaBoostChoices.OFF ||
+			choice.id === AntennaBoostChoices.H_ ||
+			choice.id === AntennaBoostChoices.A_,
+	)
+}
+
 /**
  * Antenna Gain, Select A or B inputs
  *
@@ -183,6 +238,11 @@ export enum AntennaGainDiversity {
 	A = 0x00,
 	B = 0x01,
 }
+
+export const ANTENNA_GAIN_DIVERSITY_CHOICES = [
+	{ id: AntennaGainDiversity.A, label: 'A' },
+	{ id: AntennaGainDiversity.B, label: 'B' },
+] as const satisfies EnumDropdownChoice<AntennaGainDiversity>[]
 
 export enum AntennaZoneColors {
 	OFF = 0x00,

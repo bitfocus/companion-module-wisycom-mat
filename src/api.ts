@@ -126,7 +126,7 @@ export type AntennaZoneKeys = keyof AntennaZone
 
 // ── Dropdown Choices based on the device interface ──────────────────
 
-type TypedDropdownChoice<T extends string | number> = { id: T; label: string }
+export type TypedDropdownChoice<T extends string | number> = { id: T; label: string }
 
 export const MAT_ID_CHOICES = [
 	{ id: 'model', label: 'Model' },
