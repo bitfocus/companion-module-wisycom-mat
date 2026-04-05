@@ -144,6 +144,8 @@ export interface MatEvents {
 	zone: [zoneId: MatDstZones, zone: Readonly<AntennaZone>]
 }
 
+export type MatEventSubscriptions = Map<keyof MatEvents, Set<string>>
+
 // ── Private device state ──────────────────────────────────────────────────────
 
 interface DeviceState {
@@ -872,7 +874,7 @@ export class MatApi extends EventEmitter<MatEvents> {
 		const payload: number[] = []
 		const pwd = this.password.substring(0, 8)
 		for (let i = 0; i < pwd.length; i++) payload.push(pwd.charCodeAt(i))
-		await this.#sendAsync(this.#buildMsg({ cmd: MatCmd.OPEN, payload }))
+		await this.#send(this.#buildMsg({ cmd: MatCmd.OPEN, payload }))
 	}
 
 	// ── Public command API ────────────────────────────────────────────────────
