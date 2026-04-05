@@ -66,6 +66,15 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 
 		for (const event of MAT_EVENT_NAMES) {
 			this.api.on(event, () => {
+				switch (event) {
+					case 'open':
+						this.#statusManager.updateStatus(InstanceStatus.Ok)
+						this.#onApiOpen().catch(() => {})
+						break
+					case 'close':
+						this.#statusManager.updateStatus(InstanceStatus.Disconnected)
+						break
+				}
 				const ids = this.feedbackSubscriptions.get(event)
 				if (ids) {
 					for (const id of ids) {
@@ -75,6 +84,28 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 				this.throttledFeedbackIdCheck()
 				if (event == 'zone') this.throttledUpdateCompanionBits() // In case Zone names have changed, make sure the dropdowns follow
 			})
+		}
+	}
+
+	async #onApiOpen(): Promise<void> {
+		if (!this.api) return
+		try {
+			// Query static device identity first — these don't change
+			await this.api.queryId()
+			await this.api.querySerial()
+			await this.api.queryAppver()
+			// Query current configuration and state
+			await this.api.setAntennaMatrix()
+			await this.api.queryStatus()
+			// Query names for all zones
+			/* for (const zone of MAT_EVENT_NAMES) {
+				// replace with zoneChoices or zone list
+			} */
+			// Start automatic status updates — state kept fresh without polling
+			await this.api.setAutostatus(true)
+		} catch (err) {
+			this.logger.error(`Initial query failed: ${(err as Error).message}`)
+			this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
 		}
 	}
 
