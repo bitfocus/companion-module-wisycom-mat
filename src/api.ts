@@ -146,6 +146,22 @@ export interface MatEvents {
 
 export type MatEventSubscriptions = Map<keyof MatEvents, Set<string>>
 
+export const MAT_EVENT_NAMES = [
+	'open',
+	'close',
+	'id',
+	'serial',
+	'versions',
+	'name',
+	'display',
+	'leds',
+	'temp',
+	'voltage',
+	'rfLevels',
+	'matrixConfig',
+	'zone',
+] as const satisfies readonly (keyof MatEvents)[]
+
 // ── Private device state ──────────────────────────────────────────────────────
 
 interface DeviceState {
