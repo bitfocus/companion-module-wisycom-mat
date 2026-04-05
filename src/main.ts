@@ -6,7 +6,9 @@ import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { MatApi, type MatEvents, MAT_EVENT_NAMES, type MatEventSubscriptions } from './api.js'
 import { StatusManager } from './status.js'
+import { MatDstZones } from './enum.js'
 import type { InstanceBaseExt, MatTypes } from './types.js'
+import { zoneChoices } from './zones.js'
 import { throttle } from 'es-toolkit'
 
 /**
@@ -98,9 +100,10 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 			await this.api.setAntennaMatrix()
 			await this.api.queryStatus()
 			// Query names for all zones
-			/* for (const zone of MAT_EVENT_NAMES) {
-				// replace with zoneChoices or zone list
-			} */
+			const zoneList = zoneChoices(this.api)
+			for (const zone of zoneList) {
+				await this.api.setName(zone.id as MatDstZones)
+			}
 			// Start automatic status updates — state kept fresh without polling
 			await this.api.setAutostatus(true)
 		} catch (err) {
