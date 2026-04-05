@@ -472,8 +472,12 @@ export class MatApi extends EventEmitter<MatEvents> {
 		}
 	}
 
-	async #sendAsync(msg: MatMessage): Promise<MatMessage> {
+	async #send(msg: MatMessage): Promise<MatMessage> {
 		const buffer = buildMessage(msg)
+
+		const sent = (await this.#tcp?.sendAsync(buffer)) ?? false
+		if (!sent) throw new Error('Send failed – socket not connected')
+
 		return new Promise<MatMessage>((resolve, reject) => {
 			const timeout = setTimeout(() => {
 				this.#pending.delete(msg.token)
@@ -481,25 +485,18 @@ export class MatApi extends EventEmitter<MatEvents> {
 			}, RESPONSE_TIMEOUT_MS)
 
 			this.#pending.set(msg.token, { message: msg, resolve, reject, timeout })
-
-			const sent = this.#tcp?.send(buffer) ?? false
-			if (!sent) {
-				clearTimeout(timeout)
-				this.#pending.delete(msg.token)
-				reject(new Error('Send failed – socket not connected'))
-			}
 		})
 	}
 
 	/** Queued send — requires an open session. */
 	async #queueSend(msg: MatMessage): Promise<MatMessage> {
 		if (!this.#isOpen) return Promise.reject(new Error('Session not open'))
-		return this.#queue.add(async () => this.#sendAsync(msg))
+		return this.#queue.add(async () => this.#send(msg))
 	}
 
 	/** Queued send — for the four commands available without OPEN. */
 	async #queueSendNoAuth(msg: MatMessage): Promise<MatMessage> {
-		return this.#queue.add(async () => this.#sendAsync(msg))
+		return this.#queue.add(async () => this.#send(msg))
 	}
 
 	// ── Receive pipeline ────────────────────────────────────────────────────
