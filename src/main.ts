@@ -4,7 +4,7 @@ import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { MatApi, type MatEvents, type MatEventSubscriptions } from './api.js'
+import { MatApi, type MatEvents, MAT_EVENT_NAMES, type MatEventSubscriptions } from './api.js'
 import { StatusManager } from './status.js'
 import type { InstanceBaseExt, MatTypes } from './types.js'
 import { throttle } from 'es-toolkit'
@@ -22,7 +22,9 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 	#statusManager = new StatusManager(this, { status: InstanceStatus.Connecting, message: 'Initialising' }, 2000)
 	public api: MatApi | null = null
 	private feedbackIdsToCheck: Set<string> = new Set()
-	private feedbackSubscriptions: MatEventSubscriptions = new Map()
+	private feedbackSubscriptions: MatEventSubscriptions = new Map(
+		MAT_EVENT_NAMES.map((event) => [event, new Set<string>()]),
+	)
 	private logger = createModuleLogger('Base Class')
 	constructor(internal: unknown) {
 		super(internal)
@@ -46,9 +48,7 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 		this.api = new MatApi(config.host, config.port, secrets.password)
 		this.setupApiEventListeners()
 		this.api.connect()
-		this.updateActions() // export actions
-		this.updateFeedbacks() // export feedbacks
-		this.updateVariableDefinitions() // export variable definitions
+		this.throttledUpdateCompanionBits()
 	}
 
 	private async closeApi(): Promise<void> {
@@ -62,19 +62,19 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 	}
 
 	private setupApiEventListeners(): void {
-		if (!this.api) return
-		const onEvent = (event: keyof MatEvents): void => {
-			const ids = this.feedbackSubscriptions.get(event)
-			if (ids) {
-				for (const id of ids) {
-					this.feedbackIdsToCheck.add(id)
-				}
-			}
-			this.throttledFeedbackIdCheck()
-		}
+		if (!this.api) throw new Error('MAT API not initalized, can not setup API event listeners') // Should never happen
 
-		for (const event of Object.keys(this.api) as (keyof MatEvents)[]) {
-			this.api.on(event, () => onEvent(event))
+		for (const event of MAT_EVENT_NAMES) {
+			this.api.on(event, () => {
+				const ids = this.feedbackSubscriptions.get(event)
+				if (ids) {
+					for (const id of ids) {
+						this.feedbackIdsToCheck.add(id)
+					}
+				}
+				this.throttledFeedbackIdCheck()
+				if (event == 'zone') this.throttledUpdateCompanionBits() // In case Zone names have changed, make sure the dropdowns follow
+			})
 		}
 	}
 
@@ -88,15 +88,11 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 	)
 
 	public addFeedbackSubscription(event: keyof MatEvents, feedbackId: string): void {
-		const eventSubs = this.feedbackSubscriptions.get(event) ?? new Set<string>()
-		eventSubs.add(feedbackId)
-		this.feedbackSubscriptions.set(event, eventSubs)
+		this.feedbackSubscriptions.get(event)!.add(feedbackId)
 	}
 
 	public removeFeedbackSubscription(event: keyof MatEvents, feedbackId: string): void {
-		const eventSubs = this.feedbackSubscriptions.get(event)
-		if (!eventSubs) return
-		eventSubs.delete(feedbackId)
+		this.feedbackSubscriptions.get(event)!.delete(feedbackId)
 	}
 
 	// Return config fields for web config
@@ -115,4 +111,14 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 	updateVariableDefinitions(): void {
 		UpdateVariableDefinitions(this)
 	}
+
+	private throttledUpdateCompanionBits = throttle(
+		() => {
+			this.updateActions()
+			this.updateFeedbacks()
+			this.updateVariableDefinitions()
+		},
+		1000,
+		{ edges: ['trailing'] },
+	)
 }
