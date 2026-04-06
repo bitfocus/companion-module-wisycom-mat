@@ -132,7 +132,7 @@ export const MAT_ID_CHOICES = [
 	{ id: 'model', label: 'Model' },
 	{ id: 'option', label: 'Option' },
 	{ id: 'class', label: 'Class' },
-	//{ id: 'hwRev', label: 'Hardware Revision' },
+	{ id: 'hwRev', label: 'Hardware Revision' },
 ] as const satisfies TypedDropdownChoice<MatIdKeys>[]
 
 export const MAT_VERSIONS_CHOICES = [
