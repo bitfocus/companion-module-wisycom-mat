@@ -1,6 +1,8 @@
 {
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
 	"id": "wisycom-mat",
 	"name": "wisycom-mat",
+	"type": "connection",
 	"shortname": "Wisycom MAT",
 	"description": "Wisycom MAT RF Matrix",
 	"version": "0.0.0",
