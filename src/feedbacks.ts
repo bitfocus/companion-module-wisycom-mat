@@ -4,8 +4,9 @@ import {
 	type MatDstZones,
 	AntennaDiversityChoices,
 	AntennaBoostChoices,
-	ANTENNA_BOOST_CHOICES,
-	ANTENNA_DIVERSITY_CHOICES,
+	AntennaZoneColors,
+	AntennaAlarmLed,
+	MatVersionType,
 } from './enum.js'
 import {
 	type MatEvents,
@@ -101,8 +102,6 @@ export type FeedbackSchema = {
 			antenna: 'A' | 'B'
 			field: AntennaZoneKeys
 			leds: AntennaLedsKeys
-			diversity: AntennaDiversityChoices
-			boost: AntennaBoostChoices
 			details: AntennaDetailsKeys
 		}
 	}
@@ -145,7 +144,21 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 		],
 		callback: (feedback) => {
 			sub('versions', feedback.id, self)
-			return self.api?.versions[feedback.options.field] ?? null
+			if (!self.api) return null
+			switch (feedback.options.field) {
+				case 'major':
+					return self.api.versions.major
+				case 'minor':
+					return self.api.versions.minor
+				case 'muProcessor':
+					return self.api.versions.muProcessor
+				case 'type':
+					return MatVersionType[self.api.versions.type]
+				default: {
+					const _exhaustiveCheck: never = feedback.options.field
+					return _exhaustiveCheck
+				}
+			}
 		},
 	}
 
@@ -274,22 +287,6 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 				default: ANTENNA_DETAILS_CHOICES[0].id,
 				isVisibleExpression: `$(options:field) == ${ANTENNA_ZONE_CHOICES[5].id}`,
 			},
-			{
-				type: 'dropdown',
-				id: 'boost',
-				label: 'Field',
-				choices: ANTENNA_BOOST_CHOICES,
-				default: ANTENNA_BOOST_CHOICES[0].id,
-				isVisibleExpression: `$(options:field) == ${ANTENNA_ZONE_CHOICES[4].id}`,
-			},
-			{
-				type: 'dropdown',
-				id: 'diversity',
-				label: 'Field',
-				choices: ANTENNA_DIVERSITY_CHOICES,
-				default: ANTENNA_DIVERSITY_CHOICES[0].id,
-				isVisibleExpression: `$(options:field) == ${ANTENNA_ZONE_CHOICES[3].id}`,
-			},
 		],
 		callback: (feedback) => {
 			sub('zone', feedback.id, self)
@@ -305,7 +302,20 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 				case 'diversity':
 					return AntennaDiversityChoices[zone.diversity]
 				case 'leds':
-					return zone.leds[feedback.options.leds]
+					switch (feedback.options.leds) {
+						case 'alarmBoost':
+							return AntennaAlarmLed[zone.leds.alarmBoost]
+						case 'pendingErrors':
+							return zone.leds.pendingErrors
+						case 'pendingEvents':
+							return zone.leds.pendingEvents
+						case 'zone':
+							return AntennaZoneColors[zone.leds.zone]
+						default: {
+							const _exhaustiveCheck: never = feedback.options.leds
+							return _exhaustiveCheck
+						}
+					}
 				case 'name':
 					return zone.name
 				default: {
