@@ -268,7 +268,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 				label: 'LED',
 				choices: ANTENNA_LEDS_CHOICES,
 				default: ANTENNA_LEDS_CHOICES[0].id,
-				isVisibleExpression: `$(options:field) == ${ANTENNA_ZONE_CHOICES[1].id}`,
+				isVisibleExpression: `$(options:field) == '${ANTENNA_ZONE_CHOICES[1].id}'`,
 			},
 			{
 				type: 'dropdown',
@@ -279,7 +279,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 					{ id: 'B', label: 'B' },
 				],
 				default: 'A',
-				isVisibleExpression: `$(options:field) == ${ANTENNA_ZONE_CHOICES[5].id}`,
+				isVisibleExpression: `$(options:field) == '${ANTENNA_ZONE_CHOICES[5].id}'`,
 			},
 			{
 				type: 'dropdown',
@@ -287,7 +287,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 				label: 'Field',
 				choices: ANTENNA_DETAILS_CHOICES,
 				default: ANTENNA_DETAILS_CHOICES[0].id,
-				isVisibleExpression: `$(options:field) == ${ANTENNA_ZONE_CHOICES[5].id}`,
+				isVisibleExpression: `$(options:field) == '${ANTENNA_ZONE_CHOICES[5].id}'`,
 			},
 		],
 		callback: (feedback) => {
