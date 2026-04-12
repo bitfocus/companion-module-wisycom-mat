@@ -187,7 +187,7 @@ Default style: black text on red background when active.
 
 ### RF Level
 
-Returns an RF signal level. Values are multiplied by 100 by the device — divide by 100 in an expression to get dBFS (e.g. `-2078` = `-20.78 dBFS`). Out-of-range values are approximately `-46.19`.
+Returns an RF signal level in dBm.
 
 | Option | Returns                                                        |
 | ------ | -------------------------------------------------------------- |
