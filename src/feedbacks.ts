@@ -225,7 +225,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 		callback: (feedback) => {
 			sub('voltage', feedback.id, self)
 			const volts = self.api?.voltage[feedback.options.field] ?? null
-			return volts === null ? volts : volts / 100
+			return volts === null ? volts : volts / 1000
 		},
 	}
 
