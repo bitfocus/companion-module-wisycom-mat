@@ -725,7 +725,7 @@ export class MatApi extends EventEmitter<MatEvents> {
 			case MatCmd.APP_VER:
 				return this.#parseAppver(msg.payload)
 			case MatCmd.NAME:
-				return this.#parseName(msg.dst, msg.payload)
+				return this.#parseName(msg.src, msg.payload)
 			case MatCmd.DISPLAY:
 				return this.#parseDisplay(msg.payload)
 			case MatCmd.LOCK:
@@ -783,15 +783,15 @@ export class MatApi extends EventEmitter<MatEvents> {
 		this.emit('versions', this.#device.versions)
 	}
 
-	#parseName(dst: MatDst | MatDstZones, p: number[]): void {
+	#parseName(src: MatSrc | MatDstZones, p: number[]): void {
 		const name = String.fromCharCode(...p)
 			.replace(/\0/g, '')
 			.trim()
-		if (dst === MatDst.DEVICE) {
+		if (src === MatSrc.Device) {
 			this.#device.name = name
 			this.emit('name', name)
-		} else if (dst !== MatDst.PC) {
-			const zoneId = dst // as MatDstZones
+		} else {
+			const zoneId = src as MatDstZones
 			const zone = this.#getOrCreateZone(zoneId)
 			zone.name = name
 			this.emit('zone', zoneId, zone)
