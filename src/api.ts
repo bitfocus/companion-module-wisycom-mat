@@ -170,10 +170,10 @@ export const MAT_TEMPS_CHOICES = [
 ] as const satisfies TypedDropdownChoice<MatTempsKeys>[]
 
 export const MAT_VOLTAGES_CHOICES = [
-	{ id: 'ext', label: 'External' },
-	{ id: '_8mv', label: '+8V Rail' },
-	{ id: '_5mv', label: '+5V Rail' },
-	{ id: '_12mv', label: '+12V Rail' },
+	{ id: 'ext', label: 'External DC' },
+	{ id: '_8mv', label: 'Main RF (+5v)' },
+	{ id: '_5mv', label: 'Main Logic (+5v)' },
+	{ id: '_12mv', label: 'Main PWR (+12v)' },
 ] as const satisfies TypedDropdownChoice<MatVoltagesKeys>[]
 
 export const MAT_DISPLAY_CHOICES = [
