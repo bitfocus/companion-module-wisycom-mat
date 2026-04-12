@@ -210,7 +210,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 
 	feedbacks[FeedbackId.Voltage] = {
 		name: 'Voltage Rail',
-		description: 'Returns a voltage rail reading in mV (×100 — divide by 100 for volts)',
+		description: 'Returns a voltage rail reading in V',
 		type: 'value',
 		options: [
 			{
@@ -223,7 +223,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 		],
 		callback: (feedback) => {
 			sub('voltage', feedback.id, self)
-			return self.api?.voltage[feedback.options.field] ?? null
+			return (self.api?.voltage[feedback.options.field] ?? 0) / 100
 		},
 	}
 
