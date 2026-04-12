@@ -12,7 +12,7 @@ import { zoneChoices } from './zones.js'
 import { throttle } from 'es-toolkit'
 
 const TEMP_VOLT_POLL_INTERVAL = 30000
-const AUTOSTATUS_INTERVAL = 32
+const AUTOSTATUS_INTERVAL = 20
 
 /**
  * Class for control of Wisycom MAT 244 / 288 RF Matrix
@@ -126,7 +126,7 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 				await this.api.setName(zone.id as MatDstZones)
 			}
 			// Start automatic status updates — state kept fresh without polling
-			await this.api.setAutostatus(true, AUTOSTATUS_INTERVAL)
+			await this.api.setAutostatus(true, this.config.interval)
 		} catch (err) {
 			this.logger.error(`Initial query failed: ${(err as Error).message}`)
 			this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
