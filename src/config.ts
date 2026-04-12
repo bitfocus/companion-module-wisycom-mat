@@ -3,7 +3,6 @@ import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 export type ModuleConfig = {
 	host: string
 	port: number
-	model: MatModels
 	interval: number
 }
 
@@ -33,18 +32,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			min: 1,
 			max: 65535,
 			default: 2101,
-		},
-		{
-			type: 'dropdown',
-			id: 'model',
-			label: 'Model',
-			default: MatModels.Mat244,
-			choices: [
-				{ id: MatModels.Mat244, label: MatModels.Mat244 },
-				{ id: MatModels.Mat288, label: MatModels.Mat288 },
-			],
-			allowCustom: false,
-			width: 8,
 		},
 		{
 			type: 'number',
