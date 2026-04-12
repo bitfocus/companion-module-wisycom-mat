@@ -5,7 +5,6 @@ export type ModuleConfig = {
 	port: number
 	model: MatModels
 	interval: number
-	password: string
 }
 
 export type ModuleSecrets = {
