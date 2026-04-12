@@ -11,6 +11,8 @@ import type { InstanceBaseExt, MatTypes } from './types.js'
 import { zoneChoices } from './zones.js'
 import { throttle } from 'es-toolkit'
 
+const TEMP_VOLT_POLL_INTERVAL = 30000
+
 /**
  * Class for control of Wisycom MAT 244 / 288 RF Matrix
  *
@@ -28,6 +30,7 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 		MAT_EVENT_NAMES.map((event) => [event, new Set<string>()]),
 	)
 	private logger = createModuleLogger('Base Class')
+	private tempVoltagePollInterval: NodeJS.Timeout | null = null
 	constructor(internal: unknown) {
 		super(internal)
 	}
@@ -54,6 +57,10 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 	}
 
 	private async closeApi(): Promise<void> {
+		if (this.tempVoltagePollInterval) {
+			clearInterval(this.tempVoltagePollInterval)
+			this.tempVoltagePollInterval = null
+		}
 		if (this.api) {
 			// Attempt a polite closing
 			if (this.api.isOpen) await this.api.close()
@@ -72,9 +79,19 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 					case 'open':
 						this.#statusManager.updateStatus(InstanceStatus.Ok)
 						this.#onApiOpen().catch(() => {})
+						this.tempVoltagePollInterval = setInterval(() => {
+							if (this.api?.isOpen) {
+								this.api.queryTemp().catch(() => {})
+								this.api.queryVoltage().catch(() => {})
+							}
+						}, TEMP_VOLT_POLL_INTERVAL)
 						break
 					case 'close':
 						this.#statusManager.updateStatus(InstanceStatus.Disconnected)
+						if (this.tempVoltagePollInterval) {
+							clearInterval(this.tempVoltagePollInterval)
+							this.tempVoltagePollInterval = null
+						}
 						break
 				}
 				const ids = this.feedbackSubscriptions.get(event)
@@ -96,6 +113,9 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 			await this.api.queryId()
 			await this.api.querySerial()
 			await this.api.queryAppver()
+			// Query Temp and Voltage data that isnt in autostatus messages
+			await this.api.queryTemp()
+			await this.api.queryVoltage()
 			// Query current configuration and state
 			await this.api.setAntennaMatrix()
 			await this.api.queryStatus()
