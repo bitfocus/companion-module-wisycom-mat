@@ -8,3 +8,4 @@ DEBUG-*
 *.pdf
 *.zip
 *.tgz
+*.lua
