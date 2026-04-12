@@ -32,6 +32,7 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 	)
 	private logger = createModuleLogger('Base Class')
 	private tempVoltagePollInterval: NodeJS.Timeout | null = null
+	private statusPollInterval: NodeJS.Timeout | null = null
 	constructor(internal: unknown) {
 		super(internal)
 	}
@@ -57,11 +58,19 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 		this.throttledUpdateCompanionBits()
 	}
 
-	private async closeApi(): Promise<void> {
+	private stopIntervalTimers(): void {
 		if (this.tempVoltagePollInterval) {
 			clearInterval(this.tempVoltagePollInterval)
 			this.tempVoltagePollInterval = null
 		}
+		if (this.statusPollInterval) {
+			clearInterval(this.statusPollInterval)
+			this.statusPollInterval = null
+		}
+	}
+
+	private async closeApi(): Promise<void> {
+		this.stopIntervalTimers()
 		if (this.api) {
 			// Attempt a polite closing
 			if (this.api.isOpen) await this.api.close()
@@ -80,19 +89,10 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 					case 'open':
 						this.#statusManager.updateStatus(InstanceStatus.Ok)
 						this.#onApiOpen().catch(() => {})
-						this.tempVoltagePollInterval = setInterval(() => {
-							if (this.api?.isOpen) {
-								this.api.queryTemp().catch(() => {})
-								this.api.queryVoltage().catch(() => {})
-							}
-						}, TEMP_VOLT_POLL_INTERVAL)
 						break
 					case 'close':
 						this.#statusManager.updateStatus(InstanceStatus.Disconnected)
-						if (this.tempVoltagePollInterval) {
-							clearInterval(this.tempVoltagePollInterval)
-							this.tempVoltagePollInterval = null
-						}
+						this.stopIntervalTimers()
 						break
 				}
 				const ids = this.feedbackSubscriptions.get(event)
@@ -125,12 +125,27 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 			for (const zone of zoneList) {
 				await this.api.setName(zone.id as MatDstZones)
 			}
-			// Start automatic status updates — state kept fresh without polling
-			await this.api.setAutostatus(true, this.config.interval)
 		} catch (err) {
 			this.logger.error(`Initial query failed: ${(err as Error).message}`)
 			this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
 		}
+		// AUTOSTATUS is optional — some firmware versions don't support it.
+		// If unsupported, the module will rely on queryStatus() polling instead.
+		try {
+			await this.api.setAutostatus(true)
+		} catch (err) {
+			this.logger.warn(`AUTOSTATUS not supported, falling back to polling: ${(err as Error).message}`)
+			if (this.statusPollInterval) clearInterval(this.statusPollInterval)
+			this.statusPollInterval = setInterval(() => {
+				this.api?.queryStatus().catch(() => {})
+			}, this.config.interval)
+		}
+		this.tempVoltagePollInterval = setInterval(() => {
+			if (this.api?.isOpen) {
+				this.api.queryTemp().catch(() => {})
+				this.api.queryVoltage().catch(() => {})
+			}
+		}, TEMP_VOLT_POLL_INTERVAL)
 	}
 
 	private throttledFeedbackIdCheck = throttle(
