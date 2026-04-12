@@ -592,9 +592,6 @@ export class MatApi extends EventEmitter<MatEvents> {
 	async #send(msg: MatMessage): Promise<MatMessage> {
 		const buffer = buildMessage(msg)
 
-		const sent = (await this.#tcp?.sendAsync(buffer)) ?? false
-		if (!sent) throw new Error('Send failed – socket not connected')
-
 		return new Promise<MatMessage>((resolve, reject) => {
 			const timeout = setTimeout(() => {
 				this.#pending.delete(msg.token)
@@ -602,6 +599,21 @@ export class MatApi extends EventEmitter<MatEvents> {
 			}, RESPONSE_TIMEOUT_MS)
 
 			this.#pending.set(msg.token, { message: msg, resolve, reject, timeout })
+
+			this.#tcp
+				?.sendAsync(buffer)
+				.then((sent) => {
+					if (!(sent ?? false)) {
+						clearTimeout(timeout)
+						this.#pending.delete(msg.token)
+						reject(new Error('Send failed – socket not connected'))
+					}
+				})
+				.catch((err: Error) => {
+					clearTimeout(timeout)
+					this.#pending.delete(msg.token)
+					reject(err)
+				})
 		})
 	}
 
