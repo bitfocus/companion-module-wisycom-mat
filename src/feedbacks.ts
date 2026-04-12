@@ -178,7 +178,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 
 	feedbacks[FeedbackId.RfLevels] = {
 		name: 'RF Level',
-		description: 'Returns an RF signal level (×100 — divide by 100 for dBFS)',
+		description: 'Returns an RF signal level in dBm',
 		type: 'value',
 		options: [
 			{
@@ -191,7 +191,8 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 		],
 		callback: (feedback) => {
 			sub('rfLevels', feedback.id, self)
-			return self.api?.rfLevels[feedback.options.field] ?? null
+			const rf = self.api?.rfLevels[feedback.options.field] ?? null
+			return rf === null ? rf : rf / 100
 		},
 	}
 
@@ -223,7 +224,8 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 		],
 		callback: (feedback) => {
 			sub('voltage', feedback.id, self)
-			return (self.api?.voltage[feedback.options.field] ?? 0) / 100
+			const volts = self.api?.voltage[feedback.options.field] ?? null
+			return volts === null ? volts : volts / 100
 		},
 	}
 
