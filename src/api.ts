@@ -18,6 +18,7 @@ import {
 	AntennaAlarmLed,
 	AntennaZoneColors,
 } from './enum.js'
+import { IS_DIVERSITY, normaliseModel } from './zones.js'
 
 // ── Device state interfaces (exported for use by the module) ──────────────────
 
@@ -872,6 +873,8 @@ export class MatApi extends EventEmitter<MatEvents> {
 			const zone = this.#getOrCreateZone(zoneId)
 			zone.leds = { ...zone.leds, pendingEvents: events, pendingErrors: errors }
 			// Zone emit deferred — we update all zone fields before emitting below
+			// Clear any events
+			if (events) void this.clearPendingEvent(zoneId)
 		}
 
 		// Alarm boost per antenna — B4 covers antennas 1–4, B5 covers 5–8
@@ -880,10 +883,11 @@ export class MatApi extends EventEmitter<MatEvents> {
 			const bitBase = (z % 4) * 2
 			const alarmA = !!(p[4 + byteIdx] & (1 << bitBase))
 			const alarmB = !!(p[4 + byteIdx] & (1 << (bitBase + 1)))
+			const isDiversity = IS_DIVERSITY[normaliseModel(this.#device.id.model)][this.#device.matrixConfig]
 			const zone = this.#getOrCreateZone((z + 1) as MatDstZones)
 			zone.leds = {
 				...zone.leds,
-				alarmBoost: alarmA || alarmB ? AntennaAlarmLed.ERROR : AntennaAlarmLed.OFF,
+				alarmBoost: alarmA || (isDiversity && alarmB) ? AntennaAlarmLed.ERROR : AntennaAlarmLed.OFF,
 			}
 		}
 
@@ -1072,6 +1076,10 @@ export class MatApi extends EventEmitter<MatEvents> {
 
 	public async saveParam(): Promise<MatMessage> {
 		return this.#queueSend(this.#buildMsg({ cmd: MatCmd.SAVE_PAR }))
+	}
+
+	public async clearPendingEvent(zone: MatDstZones): Promise<MatMessage> {
+		return this.#queueSend(this.#buildMsg({ cmd: MatCmd.CLEAR, dst: zone }))
 	}
 
 	/**

@@ -104,6 +104,7 @@ export enum MatCmd {
 	SERIAL = 0x03,
 	APP_VER = 0x06,
 	STATUS = 0x0d,
+	CLEAR = 0x0e,
 	NAME = 0x20,
 	DISPLAY = 0x27,
 	LOCK = 0x28,

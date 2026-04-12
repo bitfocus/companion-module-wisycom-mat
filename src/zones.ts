@@ -61,7 +61,7 @@ const ZONE_COUNT: Record<'MAT244' | 'MAT288', Record<AntennaMatrixChoices, numbe
  * variants. Falls back to MAT288 (the larger device) if unrecognised so
  * that choices are never silently truncated.
  */
-function normaliseModel(model: string): 'MAT244' | 'MAT288' {
+export function normaliseModel(model: string): 'MAT244' | 'MAT288' {
 	if (model.includes('244')) return 'MAT244'
 	if (model.includes('288')) return 'MAT288'
 	return 'MAT288'
