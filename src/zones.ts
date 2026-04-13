@@ -95,7 +95,7 @@ export function zoneChoices(mat: MatApi): DropdownChoice[] {
 		const name = mat.zone(zoneId)?.name
 		choices.push({
 			id: zoneId,
-			label: name && name !== 'UNKNOWN' ? name : `Zone ${z}`,
+			label: name && name !== 'UNKNOWN' ? `${z}: ${name}` : `Zone ${z}`,
 		})
 	}
 
