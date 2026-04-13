@@ -717,7 +717,9 @@ export class MatApi extends EventEmitter<MatEvents> {
 			pending.resolve(parsedMsg)
 		} else {
 			pending.reject(
-				new Error(`Command 0x${cmd.toString(16)} failed: status 0x${status.toString(16).padStart(2, '0')}`),
+				new Error(
+					`Command 0x${cmd.toString(16)} - ${MatCmd[cmd]} failed: status 0x${status.toString(16).padStart(2, '0')} - ${MatMsgStatus[status]}`,
+				),
 			)
 		}
 	}
