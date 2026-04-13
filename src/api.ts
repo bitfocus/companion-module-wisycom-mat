@@ -754,7 +754,7 @@ export class MatApi extends EventEmitter<MatEvents> {
 			case MatCmd.STATUS:
 				return this.#parseStatus(msg.payload)
 			case MatCmd.ANTENNA:
-				return this.#parseAntenna(msg.dst, msg.payload)
+				return this.#parseAntenna(msg.src, msg.payload)
 			// OPEN, CLOSE, SAVE_PAR, AUTO_STATUS carry no state to update
 		}
 	}
@@ -930,7 +930,7 @@ export class MatApi extends EventEmitter<MatEvents> {
 		}
 	}
 
-	#parseAntenna(dst: MatDst | MatDstZones, p: number[]): void {
+	#parseAntenna(dst: MatDstZones | MatSrc, p: number[]): void {
 		if (p.length < 1) return
 		const subCmd = p[0] as SubCmdAntenna
 		const data = p.slice(1)
