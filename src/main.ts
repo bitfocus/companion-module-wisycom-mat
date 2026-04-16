@@ -117,6 +117,8 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 			// Query Temp and Voltage data that isnt in autostatus messages
 			await this.api.queryTemp()
 			await this.api.queryVoltage()
+			await this.api.setDisplay()
+			await this.api.setLock()
 			// Query current configuration and state
 			await this.api.setAntennaMatrix()
 			await this.api.queryStatus()
@@ -124,6 +126,11 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 			const zoneList = zoneChoices(this.api)
 			for (const zone of zoneList) {
 				await this.api.setName(zone.id as MatDstZones)
+				//await this.api.setAntennaActivate(zone.id as MatDstZones)
+				//await this.api.setAntennaBoost(zone.id as MatDstZones)
+				//await this.api.setAntennaDiversity(zone.id as MatDstZones)
+				//await this.api.setAntennaGain(zone.id as MatDstZones)
+				//await this.api.queryAntennaBoostDiag(zone.id as MatDstZones)
 			}
 		} catch (err) {
 			this.logger.error(`Initial query failed: ${(err as Error).message}`)
@@ -134,7 +141,7 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 		try {
 			await this.api.setAutostatus(true)
 		} catch (err) {
-			this.logger.warn(`AUTOSTATUS not supported, falling back to polling: ${(err as Error).message}`)
+			this.logger.info(`AUTOSTATUS not supported, falling back to polling: ${(err as Error).message}`)
 			if (this.statusPollInterval) clearInterval(this.statusPollInterval)
 			this.statusPollInterval = setInterval(() => {
 				this.api?.queryStatus().catch(() => {})
@@ -142,8 +149,8 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 		}
 		this.tempVoltagePollInterval = setInterval(() => {
 			if (this.api?.isOpen) {
-				this.api.queryTemp().catch(() => {})
-				this.api.queryVoltage().catch(() => {})
+				if ((this.feedbackSubscriptions.get('temp')?.size ?? 0) > 0) this.api.queryTemp().catch(() => {})
+				if ((this.feedbackSubscriptions.get('voltage')?.size ?? 0) > 0) this.api.queryVoltage().catch(() => {})
 			}
 		}, TEMP_VOLT_POLL_INTERVAL)
 	}
