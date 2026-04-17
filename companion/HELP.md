@@ -196,7 +196,7 @@ Returns an RF signal level in dBm.
 | RF 2A  | Signal level on antenna 2, path A (×100) — 2×4:2 / 4:2 configs |
 | RF 2B  | Signal level on antenna 2, path B (×100) — MAT288 2×4:2 config |
 
-> **Note:** RF levels are updated by AUTOSTATUS at ~32ms intervals. Temperature and voltage are polled separately on a 30-second interval.
+> **Note:** RF levels are updated according to the configured poll interval. Temperature and voltage are polled separately on a 30-second interval.
 
 ---
 
@@ -216,12 +216,12 @@ Returns a board temperature in degrees Celsius.
 
 Returns an internal voltage rail reading.
 
-| Option    | Returns                 |
-| --------- | ----------------------- |
-| External  | External supply voltage |
-| +8V Rail  | Internal +8V rail       |
-| +5V Rail  | Internal +5V rail       |
-| +12V Rail | Internal +12V rail      |
+| Option           | Returns                 |
+| ---------------- | ----------------------- |
+| External DC      | External supply voltage |
+| Main RF (+5v)    | Internal +5V rail       |
+| Main Logic (+5v) | Internal +5V rail       |
+| Main PWR (+12v)  | Internal +12V rail      |
 
 ---
 
@@ -265,13 +265,3 @@ Returns a value from a specific antenna zone. The **Field** dropdown determines 
 | Boost Voltage | Boost amplifier voltage in mV, or `null` if B path has no sensor (non-diversity MAT244) |
 | Boost Current | Boost amplifier current in mA, or `null` if B path has no sensor                        |
 | Gain          | Attenuation value (0–63)                                                                |
-
----
-
-## Technical Notes
-
-- Commands are sent one at a time and the module waits for a device acknowledgement before sending the next. This matches the device's serial-port-bridged Ethernet interface which cannot handle concurrent commands.
-- AUTOSTATUS is enabled on connection at a 32ms interval, keeping RF levels and device LED state continuously fresh without polling.
-- Temperature and voltage are not included in AUTOSTATUS and are polled every 30 seconds.
-- Pending events on zones (parameter changes made via the front panel rather than via this module) are automatically acknowledged with a CMD_CLEAR command and zone state is re-queried.
-- If the device is rebooted or the connection is lost, the module will reconnect automatically and re-query all device state on reconnection.
