@@ -189,14 +189,14 @@ Default style: black text on red background when active.
 
 Returns an RF signal level in dBm.
 
-| Option | Returns                                                        |
-| ------ | -------------------------------------------------------------- |
-| RF 1A  | Signal level on antenna 1, path A (×100)                       |
-| RF 1B  | Signal level on antenna 1, path B (×100) — MAT288 only         |
-| RF 2A  | Signal level on antenna 2, path A (×100) — 2×4:2 / 4:2 configs |
-| RF 2B  | Signal level on antenna 2, path B (×100) — MAT288 2×4:2 config |
+| Option | Returns                                                 |
+| ------ | ------------------------------------------------------- |
+| RF 1A  | Signal level on antenna 1, path A                       |
+| RF 1B  | Signal level on antenna 1, path B — MAT288 only         |
+| RF 2A  | Signal level on antenna 2, path A — 2×4:2 / 4:2 configs |
+| RF 2B  | Signal level on antenna 2, path B — MAT288 2×4:2 config |
 
-> **Note:** RF levels are updated according to the configured poll interval. Temperature and voltage are polled separately on a 30-second interval.
+> **Note:** RF levels are updated according to the configured poll interval.
 
 ---
 
@@ -210,6 +210,8 @@ Returns a board temperature in degrees Celsius.
 | RX A       | Temperature of the RX A board                                           |
 | RX B       | Temperature of the RX B board (MAT288 only — MAT244 always returns 1°C) |
 
+> **Note:** Temperature and voltage are polled on a 30-second interval.
+
 ---
 
 ### Voltage Rail
@@ -222,6 +224,8 @@ Returns an internal voltage rail reading.
 | Main RF (+5v)    | Internal +5V rail       |
 | Main Logic (+5v) | Internal +5V rail       |
 | Main PWR (+12v)  | Internal +12V rail      |
+
+> **Note:** Temperature and voltage are polled on a 30-second interval.
 
 ---
 
@@ -265,3 +269,13 @@ Returns a value from a specific antenna zone. The **Field** dropdown determines 
 | Boost Voltage | Boost amplifier voltage in mV, or `null` if B path has no sensor (non-diversity MAT244) |
 | Boost Current | Boost amplifier current in mA, or `null` if B path has no sensor                        |
 | Gain          | Attenuation value (0–63)                                                                |
+
+---
+
+### Antenna Zone Color _(Advanced)_
+
+Set a button background color to match the specific antenna zone.
+
+| Field | Sub-options | Returns          |
+| ----- | ----------- | ---------------- |
+| Name  | —           | Zone name string |

@@ -34,6 +34,13 @@ import {
 
 import { zoneChoices } from './zones.js'
 
+const colors = {
+	blue: combineRgb(0, 128, 208),
+	green: combineRgb(0, 123, 0),
+	red: combineRgb(255, 0, 0),
+	off: combineRgb(47, 47, 47),
+} as const
+
 const styles = {
 	blackOnRed: {
 		bgcolor: combineRgb(255, 0, 0),
@@ -62,6 +69,7 @@ export enum FeedbackId {
 	Voltage = 'voltage',
 	Display = 'display',
 	AntennaZone = 'antennaZone',
+	AntennaButtonColor = 'antennaButtonColor',
 }
 
 // ── Feedback schema ───────────────────────────────────────────────────────────
@@ -103,6 +111,12 @@ export type FeedbackSchema = {
 			field: AntennaZoneKeys
 			leds: AntennaLedsKeys
 			details: AntennaDetailsKeys
+		}
+	}
+	[FeedbackId.AntennaButtonColor]: {
+		type: 'advanced'
+		options: {
+			zone: MatDstZones
 		}
 	}
 }
@@ -324,6 +338,30 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 					const _exhaustiveCheck: never = feedback.options.field
 					return _exhaustiveCheck
 				}
+			}
+		},
+	}
+
+	feedbacks[FeedbackId.AntennaButtonColor] = {
+		name: 'Antenna Zone Color',
+		description: 'Set button to match the antenna zone color',
+		type: 'advanced',
+		options: [{ type: 'dropdown', id: 'zone', label: 'Zone', choices: zones, default: zone0 }],
+		callback: (feedback) => {
+			sub('zone', feedback.id, self)
+			const zone = self.api?.zone(feedback.options.zone)
+			if (!zone) return {}
+			switch (AntennaZoneColors[zone.leds.zone]) {
+				case 'OFF':
+					return { bgcolor: colors.off }
+				case 'RED':
+					return { bgcolor: colors.red }
+				case 'GREEN':
+					return { bgcolor: colors.green }
+				case 'BLUE':
+					return { bgcolor: colors.blue }
+				default:
+					throw new Error('Invalid Zone Color')
 			}
 		},
 	}
