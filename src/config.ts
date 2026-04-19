@@ -40,7 +40,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 4,
 			min: 20,
 			max: 5000,
-			default: 32,
+			default: 200,
 		},
 		{
 			type: 'secret-text',
