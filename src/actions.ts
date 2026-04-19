@@ -26,7 +26,7 @@ export enum ActionId {
 export type ActionSchema = {
 	[ActionId.SetName]: {
 		options: {
-			dst: Exclude<MatDst, MatDst.PC> | MatDstZones
+			dst: Exclude<MatDst, MatDst.PC>
 			name: string
 		}
 	}
