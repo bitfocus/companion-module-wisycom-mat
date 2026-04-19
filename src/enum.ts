@@ -112,7 +112,7 @@ export enum MatCmd {
 	TEMP = 0x2f,
 	VOLTAGE = 0x44,
 	SAVE_PAR = 0x59,
-	AUTO_STATUS = 0x5a,
+	AUTO_STATUS = 0x5c, //0x5a, Doc's say 0x5a PCAP says otherwise 😊
 	ANTENNA = 0x5d,
 }
 

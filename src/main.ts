@@ -136,10 +136,10 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 			this.logger.error(`Initial query failed: ${(err as Error).message}`)
 			this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
 		}
-		// AUTOSTATUS is optional — some firmware versions don't support it.
-		// If unsupported, the module will rely on queryStatus() polling instead.
+
+		// If AUTOSTATUS fails, the module will rely on queryStatus() polling instead.
 		try {
-			await this.api.setAutostatus(true)
+			await this.api.setAutostatus(true, this.config.interval)
 		} catch (err) {
 			this.logger.info(`AUTOSTATUS not supported, falling back to polling: ${(err as Error).message}`)
 			if (this.statusPollInterval) clearInterval(this.statusPollInterval)
