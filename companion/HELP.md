@@ -276,6 +276,6 @@ Returns a value from a specific antenna zone. The **Field** dropdown determines 
 
 Set a button background color to match the specific antenna zone.
 
-| Field | Sub-options | Returns          |
-| ----- | ----------- | ---------------- |
-| Name  | —           | Zone name string |
+| Option | Description  |
+| ------ | ------------ |
+| Zone   | Antenna zone |
