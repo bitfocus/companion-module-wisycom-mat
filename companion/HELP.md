@@ -212,7 +212,7 @@ Returns a board temperature in degrees Celsius.
 | ---------- | ----------------------------------------------------------------------- |
 | Main Board | Temperature of the main board                                           |
 | RX A       | Temperature of the RX A board                                           |
-| RX B       | Temperature of the RX B board (MAT288 only — MAT244 always returns 1°C) |
+| RX B       | Temperature of the RX B board (MAT288 only — MAT244 always returns 0°C) |
 
 > **Note:** Temperature and voltage are polled on a 30-second interval.
 
