@@ -1,5 +1,5 @@
 import { DropdownChoice } from '@companion-module/base'
-import { AntennaMatrixChoices, MatDstZones } from './enum.js'
+import { AntennaMatrixChoices } from './enum.js'
 import { MatApi } from './api.js'
 
 /**
@@ -91,7 +91,7 @@ export function zoneChoices(mat: MatApi): DropdownChoice[] {
 	const choices: DropdownChoice[] = []
 
 	for (let z = 1; z <= zoneCount; z++) {
-		const zoneId = z as MatDstZones
+		const zoneId = z
 		const name = mat.zone(zoneId)?.name
 		choices.push({
 			id: zoneId,

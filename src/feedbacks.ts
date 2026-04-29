@@ -312,6 +312,10 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 				case 'active':
 					return zone.active
 				case 'antenna':
+					if (feedback.options.details == 'voltage') {
+						const voltage = zone.antenna[feedback.options.antenna]['voltage'] ?? 0
+						return voltage / 1000
+					}
 					return zone.antenna[feedback.options.antenna][feedback.options.details]
 				case 'boost':
 					return AntennaBoostChoices[zone.boost]

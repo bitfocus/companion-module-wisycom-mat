@@ -24,6 +24,10 @@ export enum MatVersionType {
 	PRODUCTION_RELEASE = 0xff,
 }
 
+export function isMatVersionType(value: number): value is MatVersionType {
+	return Object.values(MatVersionType).includes(value)
+}
+
 /**
  * Origin of message
  *

@@ -8,6 +8,7 @@ import {
 	MatDst,
 	MatDstZones,
 	MatMsgType,
+	isMatVersionType,
 	MatMsgStatus,
 	MatVersionType,
 	SubCmdAntenna,
@@ -189,8 +190,8 @@ export const ANTENNA_LEDS_CHOICES = [
 ] as const satisfies TypedDropdownChoice<AntennaLedsKeys>[]
 
 export const ANTENNA_DETAILS_CHOICES = [
-	{ id: 'voltage', label: 'Boost Voltage' },
-	{ id: 'current', label: 'Boost Current' },
+	{ id: 'voltage', label: 'Boost Voltage (V)' },
+	{ id: 'current', label: 'Boost Current (mA)' },
 	{ id: 'gain', label: 'Gain' },
 ] as const satisfies TypedDropdownChoice<AntennaDetailsKeys>[]
 
@@ -519,10 +520,11 @@ export class MatApi extends EventEmitter<MatEvents> {
 		this.#tcp.on('connect', () => {
 			this.#logger.info(`Connected to MAT at ${this.host}:${this.port}`)
 			this.#doOpen()
-				.then(() => {
+				.then(async () => {
 					this.#isOpen = true
 					this.#logger.info('Session opened – starting command queue')
 					this.#queue.start()
+					await this.#initialRefresh()
 					this.emit('open')
 				})
 				.catch((err: Error) => {
@@ -633,7 +635,7 @@ export class MatApi extends EventEmitter<MatEvents> {
 	#onData(data: Buffer): void {
 		this.#receiveBuffer = Buffer.concat([this.#receiveBuffer, data])
 		while (this.#receiveBuffer.length > 0) {
-			const bof = this.#receiveBuffer.indexOf(MatBofEof.BOF as number)
+			const bof = this.#receiveBuffer.indexOf(MatBofEof.BOF)
 			if (bof === -1) {
 				this.#receiveBuffer = Buffer.alloc(0)
 				break
@@ -643,7 +645,7 @@ export class MatApi extends EventEmitter<MatEvents> {
 				this.#receiveBuffer = this.#receiveBuffer.slice(bof)
 			}
 			// A stuffed EOF appears as 0x7D 0xE1, so a bare 0xC1 is always the real EOF
-			const eof = this.#receiveBuffer.indexOf(MatBofEof.EOF as number, 1)
+			const eof = this.#receiveBuffer.indexOf(MatBofEof.EOF, 1)
 			if (eof === -1) break
 			const frame = this.#receiveBuffer.slice(0, eof + 1)
 			this.#receiveBuffer = this.#receiveBuffer.slice(eof + 1)
@@ -671,12 +673,12 @@ export class MatApi extends EventEmitter<MatEvents> {
 			return
 		}
 
-		const src = inner[0] as MatSrc
-		const dst = inner[1] as MatDst
+		const src = inner[0]
+		const dst = inner[1]
 		const token = inner[2]
 		const size = inner[3]
 		const statusByte = inner[4]
-		const cmd = inner[5] as MatCmd
+		const cmd = inner[5]
 
 		if (inner.length < 6 + size + 1) {
 			this.#logger.warn(`Frame length mismatch: expected ${6 + size + 1}, got ${inner.length}`)
@@ -694,8 +696,8 @@ export class MatApi extends EventEmitter<MatEvents> {
 			)
 		}
 
-		const type = (statusByte >> 6) as MatMsgType
-		const status = (statusByte & 0x3f) as MatMsgStatus
+		const type: MatMsgType = statusByte >> 6
+		const status: MatMsgStatus = statusByte & 0x3f
 		const parsedMsg: MatMessage = { src, dst, token, type, status, cmd, payload }
 
 		if (type === MatMsgType.EVT) {
@@ -782,12 +784,8 @@ export class MatApi extends EventEmitter<MatEvents> {
 	#parseAppver(p: number[]): void {
 		if (p.length < 8) return
 		// B0: 0x64='d'=DEBUG, 0x72='r'=RELEASE, 0xFF=PRODUCTION_RELEASE
-		const type =
-			p[0] === (MatVersionType.DEBUG as number)
-				? MatVersionType.DEBUG
-				: p[0] === (MatVersionType.RELEASE as number)
-					? MatVersionType.RELEASE
-					: MatVersionType.PRODUCTION_RELEASE
+		const rawVersion = p[0]
+		const type: MatVersionType = isMatVersionType(rawVersion) ? rawVersion : MatVersionType.PRODUCTION_RELEASE
 		this.#device.versions = {
 			type,
 			minor: p[1],
@@ -840,8 +838,12 @@ export class MatApi extends EventEmitter<MatEvents> {
 	}
 
 	#parseTemp(p: number[]): void {
-		if (p.length < 3) return
-		this.#device.temp = { main: p[0], rxA: p[1], rxB: p[2] }
+		if (p.length < 2) return
+		this.#device.temp = {
+			main: p[0],
+			rxA: p[1],
+			rxB: p.length >= 3 ? p[2] : 0,
+		}
 		this.emit('temp', this.#device.temp)
 	}
 
@@ -883,12 +885,12 @@ export class MatApi extends EventEmitter<MatEvents> {
 			const bitBase = (z % 4) * 2
 			const events = !!(p[2 + byteIdx] & (1 << bitBase))
 			const errors = !!(p[2 + byteIdx] & (1 << (bitBase + 1)))
-			const zoneId = (z + 1) as MatDstZones
+			const zoneId = z + 1
 			const zone = this.#getOrCreateZone(zoneId)
 			zone.leds = { ...zone.leds, pendingEvents: events, pendingErrors: errors }
 			// Zone emit deferred — we update all zone fields before emitting below
 			// Clear any events
-			if (events) void this.clearPendingEvent(zoneId)
+			if (events || errors) void this.#handlePendingEvent(zoneId)
 		}
 
 		// Alarm boost per antenna — B4 covers antennas 1–4, B5 covers 5–8
@@ -898,7 +900,7 @@ export class MatApi extends EventEmitter<MatEvents> {
 			const alarmA = !!(p[4 + byteIdx] & (1 << bitBase))
 			const alarmB = !!(p[4 + byteIdx] & (1 << (bitBase + 1)))
 			const isDiversity = IS_DIVERSITY[normaliseModel(this.#device.id.model)][this.#device.matrixConfig]
-			const zone = this.#getOrCreateZone((z + 1) as MatDstZones)
+			const zone = this.#getOrCreateZone(z + 1)
 			zone.leds = {
 				...zone.leds,
 				alarmBoost: alarmA || (isDiversity && alarmB) ? AntennaAlarmLed.ERROR : AntennaAlarmLed.OFF,
@@ -910,9 +912,9 @@ export class MatApi extends EventEmitter<MatEvents> {
 			const byteIdx = Math.floor(z / 4)
 			const bitBase = (z % 4) * 2
 			const color = (p[6 + byteIdx] >> bitBase) & 0x03
-			const zoneId = (z + 1) as MatDstZones
+			const zoneId = z + 1
 			const zone = this.#getOrCreateZone(zoneId)
-			zone.leds = { ...zone.leds, zone: color as AntennaZoneColors }
+			zone.leds = { ...zone.leds, zone: color }
 			// All three zone LED fields (pending events/errors, alarm boost, colour) are
 			// now written — emit once per zone with the fully updated state.
 			this.emit('zone', zoneId, zone)
@@ -932,13 +934,13 @@ export class MatApi extends EventEmitter<MatEvents> {
 
 	#parseAntenna(dst: MatDstZones | MatSrc, p: number[]): void {
 		if (p.length < 1) return
-		const subCmd = p[0] as SubCmdAntenna
+		const subCmd: SubCmdAntenna = p[0]
 		const data = p.slice(1)
 
 		// MATRIX targets the device (dst=0x00), not a zone
 		if (subCmd === SubCmdAntenna.MATRIX) {
 			if (data.length >= 1) {
-				this.#device.matrixConfig = data[0] as AntennaMatrixChoices
+				this.#device.matrixConfig = data[0]
 				this.emit('matrixConfig', this.#device.matrixConfig)
 			}
 			return
@@ -952,10 +954,10 @@ export class MatApi extends EventEmitter<MatEvents> {
 				if (data.length >= 1) zone.active = data[0] === 1
 				break
 			case SubCmdAntenna.DIVERSITY:
-				if (data.length >= 1) zone.diversity = data[0] as AntennaDiversityChoices
+				if (data.length >= 1) zone.diversity = data[0]
 				break
 			case SubCmdAntenna.BOOST:
-				if (data.length >= 1) zone.boost = data[0] as AntennaBoostChoices
+				if (data.length >= 1) zone.boost = data[0]
 				break
 			case SubCmdAntenna.GAIN:
 				if (data.length >= 2) {
@@ -1000,6 +1002,39 @@ export class MatApi extends EventEmitter<MatEvents> {
 		if (msg.cmd === MatCmd.STATUS) this.#parseStatus(msg.payload)
 	}
 
+	/**
+	 * Sends command 0x0E (CLEAR) to the zone to acknowledge a pending event.
+	 * If the device replies with payload[0] === 0x01 (parameter modified locally),
+	 * re-fetches all zone parameters so internal state stays in sync with
+	 * any changes made via the device's front panel.
+	 */
+	async #handlePendingEvent(zoneId: MatDstZones): Promise<void> {
+		try {
+			const response = await this.clearPendingEvent(zoneId)
+			if (response.payload[0] === 0x01) {
+				await this.#refreshZone(zoneId)
+			}
+		} catch (err) {
+			this.#logger.warn(`Pending event handling failed for zone ${zoneId}: ${(err as Error).message}`)
+		}
+	}
+
+	/**
+	 * Re-fetches all zone parameters after the device signals a local modification.
+	 * Follows the refresh sequence defined in the protocol spec's
+	 * "Pending events management" section. Each query updates internal state via
+	 * the normal response parsers, so 'zone' events are emitted for each changed field.
+	 */
+	async #refreshZone(zoneId: MatDstZones): Promise<void> {
+		await this.setName(zoneId)
+		await this.setAntennaActivate(zoneId)
+		await this.setAntennaDiversity(zoneId)
+		await this.setAntennaBoost(zoneId)
+		await this.queryAntennaGain(zoneId, AntennaDiversityChoices.A)
+		await this.queryAntennaGain(zoneId, AntennaDiversityChoices.B)
+		await this.queryAntennaBoostDiag(zoneId)
+	}
+
 	// ── Session management ────────────────────────────────────────────────────
 
 	async #doOpen(): Promise<void> {
@@ -1007,6 +1042,25 @@ export class MatApi extends EventEmitter<MatEvents> {
 		const pwd = this.password.substring(0, 8)
 		for (let i = 0; i < pwd.length; i++) payload.push(pwd.charCodeAt(i))
 		await this.#send(this.#buildMsg({ cmd: MatCmd.OPEN, payload }))
+	}
+
+	async #initialRefresh(): Promise<void> {
+		// Device-level queries
+		await this.queryId()
+		await this.querySerial()
+		await this.queryAppver()
+		await this.setName(MatDst.DEVICE)
+		await this.setDisplay()
+		await this.setLock()
+		await this.queryTemp()
+		await this.queryVoltage()
+		await this.setAntennaMatrix()
+		await this.queryStatus()
+
+		// Zone-level queries for all 8 zones
+		for (const zoneId of [1, 2, 3, 4, 5, 6, 7, 8] as MatDstZones[]) {
+			await this.#refreshZone(zoneId)
+		}
 	}
 
 	// ── Public command API ────────────────────────────────────────────────────
@@ -1154,6 +1208,22 @@ export class MatApi extends EventEmitter<MatEvents> {
 	public async queryAntennaBoostDiag(zone: MatDstZones): Promise<MatMessage> {
 		return this.#queueSend(
 			this.#buildMsg({ cmd: MatCmd.ANTENNA, subCmd: SubCmdAntenna.BOOST_DIAG, dst: zone, payload: [] }),
+		)
+	}
+
+	/**
+	 * Read the gain for a specific antenna path.
+	 * Sends a 1-byte payload (path selector only), matching the path-specific
+	 * read format used in the pending-event refresh sequence per the protocol spec.
+	 */
+	public async queryAntennaGain(zone: MatDstZones, path: AntennaDiversityChoices): Promise<MatMessage> {
+		return this.#queueSend(
+			this.#buildMsg({
+				cmd: MatCmd.ANTENNA,
+				subCmd: SubCmdAntenna.GAIN,
+				dst: zone,
+				payload: [path],
+			}),
 		)
 	}
 }

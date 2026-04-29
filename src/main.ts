@@ -6,9 +6,7 @@ import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { MatApi, type MatEvents, MAT_EVENT_NAMES, type MatEventSubscriptions } from './api.js'
 import { StatusManager } from './status.js'
-import { MatDstZones } from './enum.js'
 import type { InstanceBaseExt, MatTypes } from './types.js'
-import { zoneChoices } from './zones.js'
 import { throttle } from 'es-toolkit'
 
 const TEMP_VOLT_POLL_INTERVAL = 30000
@@ -109,33 +107,7 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 
 	async #onApiOpen(): Promise<void> {
 		if (!this.api) return
-		try {
-			// Query static device identity first — these don't change
-			await this.api.queryId()
-			await this.api.querySerial()
-			await this.api.queryAppver()
-			// Query Temp and Voltage data that isnt in autostatus messages
-			await this.api.queryTemp()
-			await this.api.queryVoltage()
-			await this.api.setDisplay()
-			await this.api.setLock()
-			// Query current configuration and state
-			await this.api.setAntennaMatrix()
-			await this.api.queryStatus()
-			// Query names for all zones
-			const zoneList = zoneChoices(this.api)
-			for (const zone of zoneList) {
-				await this.api.setName(zone.id as MatDstZones)
-				//await this.api.setAntennaActivate(zone.id as MatDstZones)
-				//await this.api.setAntennaBoost(zone.id as MatDstZones)
-				//await this.api.setAntennaDiversity(zone.id as MatDstZones)
-				//await this.api.setAntennaGain(zone.id as MatDstZones)
-				//await this.api.queryAntennaBoostDiag(zone.id as MatDstZones)
-			}
-		} catch (err) {
-			this.logger.error(`Initial query failed: ${(err as Error).message}`)
-			this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-		}
+		this.#statusManager.updateStatus(InstanceStatus.Ok, 'Open')
 
 		// If AUTOSTATUS fails, the module will rely on queryStatus() polling instead.
 		try {
@@ -151,6 +123,11 @@ export default class WisycomMATInstance extends InstanceBase<MatTypes> implement
 			if (this.api?.isOpen) {
 				if ((this.feedbackSubscriptions.get('temp')?.size ?? 0) > 0) this.api.queryTemp().catch(() => {})
 				if ((this.feedbackSubscriptions.get('voltage')?.size ?? 0) > 0) this.api.queryVoltage().catch(() => {})
+				if ((this.feedbackSubscriptions.get('zone')?.size ?? 0) > 0) {
+					for (const [zoneId, zone] of this.api.zones) {
+						if (zone.active) this.api.queryAntennaBoostDiag(zoneId).catch(() => {})
+					}
+				}
 			}
 		}, TEMP_VOLT_POLL_INTERVAL)
 	}

@@ -136,6 +136,86 @@ const errorAck = (token: number, cmd: number, statusCode: number): Buffer =>
 	buildFrame(0x00, 0xfe, token, (0x01 << 6) | statusCode, cmd, [])
 
 /**
+ * Generate a minimal valid response payload for a given command.
+ * Mirrors the full command set used by #initialRefresh and #refreshZone.
+ */
+function autoRespondPayload(cmd: MatCmd, sentPayloadBytes: number[]): number[] {
+	switch (cmd) {
+		case MatCmd.OPEN:
+			return [0x00]
+		case MatCmd.ID:
+			return [...Buffer.from('MAT288\0'), 0x00, 0x01, 0x01]
+		case MatCmd.SERIAL:
+			return [...Buffer.from('U0000000\0\0')]
+		case MatCmd.APP_VER:
+			return [0xff, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+		case MatCmd.NAME:
+			return []
+		case MatCmd.DISPLAY:
+			return [0x00, 0x00]
+		case MatCmd.LOCK:
+			return [0x00]
+		case MatCmd.TEMP:
+			return [0x00, 0x00, 0x00]
+		case MatCmd.VOLTAGE:
+			return [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+		case MatCmd.STATUS:
+			return [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+		case MatCmd.CLEAR:
+			return []
+		case MatCmd.ANTENNA: {
+			const subCmd = sentPayloadBytes[0]
+			switch (subCmd) {
+				case 0x00:
+					return [0x00, 0x00] // MATRIX
+				case 0x01:
+					return [0x01, 0x00] // ACTIVATE
+				case 0x02:
+					return [0x02, 0x02] // DIVERSITY: AB
+				case 0x03:
+					return [0x03, 0x00] // BOOST: OFF
+				case 0x04:
+					return [0x04, sentPayloadBytes[1] ?? 0x00, 0x00] // GAIN
+				default:
+					return [subCmd]
+			}
+		}
+		default:
+			return []
+	}
+}
+
+/**
+ * Install a sendAsync mock that responds to every command with a valid
+ * minimal frame, echoing the actual sent token and honouring zone
+ * destinations (response src = sent dst for zone-addressed commands).
+ */
+function installAutoResponder(): void {
+	mockTCP.sendAsync.mockImplementation(async (buf: Buffer) => {
+		const inner = unstuff(buf)
+		const token = inner[2]
+		const dst = inner[1]
+		const cmd = inner[5]
+		const size = inner[3]
+		const payloadBytes = inner.slice(6, 6 + size)
+		const responseSrc = dst >= 0x01 && dst <= 0x08 ? dst : 0x00
+		const responsePayload = autoRespondPayload(cmd, payloadBytes)
+		tcpHandlers['data'](buildFrame(responseSrc, 0xfe, token, CMD_ACK_OK, cmd, responsePayload))
+		return true
+	})
+}
+
+/**
+ * Set up sendAsync so the next command gets a fixed response using the
+ * actual sent token — token-agnostic replacement for the old sendAndRespond.
+ */
+function respondWith(cmd: MatCmd, payload: number[], src = 0x00): void {
+	mockTCP.sendAsync.mockImplementation(async (buf: Buffer) => {
+		tcpHandlers['data'](buildFrame(src, 0xfe, sentToken(buf), CMD_ACK_OK, cmd, payload))
+		return true
+	})
+}
+/**
  * Parse the inner (de-stuffed) bytes from a framed buffer.
  * Used to inspect what the class actually sent over the wire.
  */
@@ -155,7 +235,7 @@ function unstuff(buffer: Buffer): number[] {
 /** Extract the token from a sent buffer */
 const sentToken = (buf: Buffer): number => unstuff(buf)[2]
 /** Extract the command byte from a sent buffer */
-const sentCmd = (buf: Buffer): MatCmd => unstuff(buf)[5] as MatCmd
+const sentCmd = (buf: Buffer): MatCmd => unstuff(buf)[5]
 /** Extract the payload bytes from a sent buffer */
 const sentPayload = (buf: Buffer): number[] => {
 	const inner = unstuff(buf)
@@ -182,17 +262,12 @@ const flush = async (ticks = 3): Promise<void> => {
  */
 async function createConnectedApi(password = ''): Promise<MatApi> {
 	const api = new MatApi('192.168.1.100', 2101, password)
+	installAutoResponder()
 	api.connect()
 	await flush()
-
-	// Simulate TCP connection established
 	tcpHandlers['connect']()
-	await flush()
-
-	// Feed the OPEN acknowledgement (token 0)
-	tcpHandlers['data'](deviceAck(0, MatCmd.OPEN, [0x00]))
-	await flush()
-
+	// 500 ticks: covers OPEN + 10 device queries + 8 zones × 6 queries each
+	await flush(500)
 	return api
 }
 
@@ -341,7 +416,6 @@ describe('MatApi', () => {
 		it('token increments for each command', async () => {
 			const api = await createConnectedApi()
 			const tokens: number[] = []
-
 			mockTCP.sendAsync.mockImplementation(async (buf: Buffer) => {
 				const token = sentToken(buf)
 				tokens.push(token)
@@ -353,15 +427,12 @@ describe('MatApi', () => {
 			await api.querySerial()
 			await api.queryAppver()
 
-			expect(tokens).toEqual([1, 2, 3])
+			expect(tokens).toHaveLength(3)
+			expect(tokens[1]).toBe((tokens[0] + 1) % 255)
+			expect(tokens[2]).toBe((tokens[1] + 1) % 255)
 		})
 
 		it('token wraps at 255 back to 0', async () => {
-			// Advance token counter to 254 by sending many messages
-			// We'll just verify the wrap logic by checking token % 255
-			// (255 tokens used → token 0 is reused)
-			// This is hard to test without sending 255 messages, so we test
-			// the Token class behaviour indirectly via the token sequence
 			const api = await createConnectedApi()
 			const tokens: number[] = []
 			mockTCP.sendAsync.mockImplementation(async (buf: Buffer) => {
@@ -371,14 +442,18 @@ describe('MatApi', () => {
 				return true
 			})
 
-			// Send 254 more commands (tokens 1..254)
-			for (let i = 0; i < 254; i++) {
+			// Send enough commands to guarantee at least one full wrap
+			for (let i = 0; i < 255; i++) {
 				await api.queryStatus()
 			}
 
-			// Next token should wrap back to 0
-			await api.queryStatus()
-			expect(tokens[tokens.length - 1]).toBe(0)
+			// A single wrap should have occurred (token sequence decreases exactly once)
+			let wraps = 0
+			for (let i = 1; i < tokens.length; i++) {
+				if (tokens[i] < tokens[i - 1]) wraps++
+			}
+			expect(wraps).toBe(1)
+			expect(tokens).toContain(0)
 		})
 	})
 
@@ -390,12 +465,11 @@ describe('MatApi', () => {
 			const onOpen = vi.fn()
 			api.on('open', onOpen)
 
+			installAutoResponder()
 			api.connect()
 			await flush()
 			tcpHandlers['connect']()
-			await flush()
-			tcpHandlers['data'](deviceAck(0, MatCmd.OPEN, [0x00]))
-			await flush()
+			await flush(500)
 
 			expect(onOpen).toHaveBeenCalledOnce()
 		})
@@ -524,13 +598,6 @@ describe('MatApi', () => {
 			})
 		})
 
-		async function sendAndRespond(responseFrame: Buffer): Promise<void> {
-			mockTCP.sendAsync.mockImplementation(async (_buf: Buffer) => {
-				tcpHandlers['data'](responseFrame)
-				return true
-			})
-		}
-
 		// ── ID ─────────────────────────────────────────────────────────────
 
 		describe('ID response', () => {
@@ -541,7 +608,7 @@ describe('MatApi', () => {
 					0x02, // class
 					0x03, // hwRev
 				]
-				await sendAndRespond(deviceAck(1, MatCmd.ID, payload))
+				respondWith(MatCmd.ID, payload)
 
 				const onId = vi.fn()
 				api.on('id', onId)
@@ -556,15 +623,15 @@ describe('MatApi', () => {
 
 			it('trims null bytes from model string', async () => {
 				const payload = [...Buffer.from('MAT244\0'), 0x00, 0x01, 0x01]
-				await sendAndRespond(deviceAck(1, MatCmd.ID, payload))
+				respondWith(MatCmd.ID, payload)
 				await api.queryId()
 				expect(api.id.model).toBe('MAT244')
 			})
 
 			it('ignores ID response shorter than 10 bytes', async () => {
-				await sendAndRespond(deviceAck(1, MatCmd.ID, [0x01, 0x02]))
+				respondWith(MatCmd.ID, [0x01, 0x02])
 				await api.queryId()
-				expect(api.id.model).toBe('UNKNOWN') // unchanged
+				expect(api.id.model).toBe('MAT288')
 			})
 		})
 
@@ -574,9 +641,8 @@ describe('MatApi', () => {
 			it('parses and trims serial number', async () => {
 				const onSerial = vi.fn()
 				api.on('serial', onSerial)
-				await sendAndRespond(deviceAck(1, MatCmd.SERIAL, [...Buffer.from('U1940157\0\0')]))
+				respondWith(MatCmd.SERIAL, [...Buffer.from('U1940157\0\0')])
 				await api.querySerial()
-
 				expect(api.serial).toBe('U1940157')
 				expect(onSerial).toHaveBeenCalledWith('U1940157')
 			})
@@ -586,9 +652,10 @@ describe('MatApi', () => {
 
 		describe('APPVER response', () => {
 			it('parses PRODUCTION_RELEASE version', async () => {
+				const api = await createConnectedApi()
 				// From protocol doc example: 0xff=production, minor=11, major=1
 				const payload = [0xff, 0x0b, 0x01, 0x00, 0x64, 0x26, 0x01, 0x00]
-				await sendAndRespond(deviceAck(1, MatCmd.APP_VER, payload))
+				respondWith(MatCmd.APP_VER, payload)
 				await api.queryAppver()
 
 				expect(api.versions.type).toBe(MatVersionType.PRODUCTION_RELEASE)
@@ -598,24 +665,27 @@ describe('MatApi', () => {
 			})
 
 			it('parses RELEASE version', async () => {
+				const api = await createConnectedApi()
 				const payload = [0x72, 0x05, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00]
-				await sendAndRespond(deviceAck(1, MatCmd.APP_VER, payload))
+				respondWith(MatCmd.APP_VER, payload)
 				await api.queryAppver()
 				expect(api.versions.type).toBe(MatVersionType.RELEASE)
 			})
 
 			it('parses DEBUG version', async () => {
+				const api = await createConnectedApi()
 				const payload = [0x64, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
-				await sendAndRespond(deviceAck(1, MatCmd.APP_VER, payload))
+				respondWith(MatCmd.APP_VER, payload)
 				await api.queryAppver()
 				expect(api.versions.type).toBe(MatVersionType.DEBUG)
 			})
 
 			it('emits "versions" event', async () => {
+				const api = await createConnectedApi()
 				const onVersions = vi.fn()
 				api.on('versions', onVersions)
 				const payload = [0xff, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
-				await sendAndRespond(deviceAck(1, MatCmd.APP_VER, payload))
+				respondWith(MatCmd.APP_VER, payload)
 				await api.queryAppver()
 				expect(onVersions).toHaveBeenCalledOnce()
 			})
@@ -627,14 +697,8 @@ describe('MatApi', () => {
 			it('updates device name when SRC is Device (0x00)', async () => {
 				const onName = vi.fn()
 				api.on('name', onName)
-				const frame = buildFrame(0x00, 0xfe, 1, CMD_ACK_OK, MatCmd.NAME, [...Buffer.from('Studio  ')])
-
-				mockTCP.sendAsync.mockImplementation(async () => {
-					tcpHandlers['data'](frame)
-					return true
-				})
+				respondWith(MatCmd.NAME, [...Buffer.from('Studio  ')], 0x00)
 				await api.setName(MatDst.DEVICE)
-
 				expect(api.name).toBe('Studio')
 				expect(onName).toHaveBeenCalledWith('Studio')
 			})
@@ -642,15 +706,8 @@ describe('MatApi', () => {
 			it('updates zone name when SRC is a zone address', async () => {
 				const onZone = vi.fn()
 				api.on('zone', onZone)
-				// SRC = 0x01 (Zone 1)
-				const frame = buildFrame(0x01, 0xfe, 1, CMD_ACK_OK, MatCmd.NAME, [...Buffer.from('Stage   ')])
-
-				mockTCP.sendAsync.mockImplementation(async () => {
-					tcpHandlers['data'](frame)
-					return true
-				})
+				respondWith(MatCmd.NAME, [...Buffer.from('Stage   ')], 0x01)
 				await api.setName(MatDst.ZONE1)
-
 				expect(api.zone(MatDst.ZONE1 as MatDstZones)?.name).toBe('Stage')
 				expect(onZone).toHaveBeenCalled()
 			})
@@ -662,7 +719,7 @@ describe('MatApi', () => {
 			it('parses timeout and brightness', async () => {
 				const onDisplay = vi.fn()
 				api.on('display', onDisplay)
-				await sendAndRespond(deviceAck(1, MatCmd.DISPLAY, [0x78, 0x0d]))
+				respondWith(MatCmd.DISPLAY, [0x78, 0x0d])
 				await api.setDisplay()
 
 				expect(api.display.timeout).toBe(120)
@@ -671,7 +728,7 @@ describe('MatApi', () => {
 			})
 
 			it('ignores DISPLAY response shorter than 2 bytes', async () => {
-				await sendAndRespond(deviceAck(1, MatCmd.DISPLAY, [0x78]))
+				respondWith(MatCmd.DISPLAY, [0x78])
 				await api.setDisplay()
 				expect(api.display.timeout).toBe(0) // unchanged from default
 			})
@@ -683,7 +740,7 @@ describe('MatApi', () => {
 			it('updates leds.lock and emits "leds"', async () => {
 				const onLeds = vi.fn()
 				api.on('leds', onLeds)
-				await sendAndRespond(deviceAck(1, MatCmd.LOCK, [0x01]))
+				respondWith(MatCmd.LOCK, [0x01])
 				await api.setLock()
 
 				expect(api.leds.lock).toBe(true)
@@ -696,7 +753,7 @@ describe('MatApi', () => {
 				tcpHandlers['data'](evtFrame(0, MatCmd.STATUS, statusPayload))
 				await flush()
 
-				await sendAndRespond(deviceAck(1, MatCmd.LOCK, [0x01]))
+				respondWith(MatCmd.LOCK, [0x01])
 				await api.setLock()
 
 				expect(api.leds.bootFailed).toBe(true) // preserved from STATUS
@@ -711,13 +768,26 @@ describe('MatApi', () => {
 				const onTemp = vi.fn()
 				api.on('temp', onTemp)
 				// From protocol doc: 0x1b=27°C MAIN, 0x1f=31°C RXA, 0x01=1°C RXB
-				await sendAndRespond(deviceAck(1, MatCmd.TEMP, [0x1b, 0x1f, 0x01]))
+				respondWith(MatCmd.TEMP, [0x1b, 0x1f, 0x01])
 				await api.queryTemp()
 
 				expect(api.temp.main).toBe(27)
 				expect(api.temp.rxA).toBe(31)
 				expect(api.temp.rxB).toBe(1)
 				expect(onTemp).toHaveBeenCalledWith({ main: 27, rxA: 31, rxB: 1 })
+			})
+
+			it('handles a 2 byte response from MAT 244, returns RXB temperatures 0', async () => {
+				const onTemp = vi.fn()
+				api.on('temp', onTemp)
+				// From protocol doc: 0x1b=27°C MAIN, 0x1f=31°C RXA
+				respondWith(MatCmd.TEMP, [0x1b, 0x1f])
+				await api.queryTemp()
+
+				expect(api.temp.main).toBe(27)
+				expect(api.temp.rxA).toBe(31)
+				expect(api.temp.rxB).toBe(0)
+				expect(onTemp).toHaveBeenCalledWith({ main: 27, rxA: 31, rxB: 0 })
 			})
 		})
 
@@ -738,7 +808,7 @@ describe('MatApi', () => {
 					0xb0,
 					0x04, // 0x04B0 = 1200
 				]
-				await sendAndRespond(deviceAck(1, MatCmd.VOLTAGE, payload))
+				respondWith(MatCmd.VOLTAGE, payload)
 				await api.queryVoltage()
 
 				expect(api.voltage.ext).toBe(1200)
@@ -934,82 +1004,51 @@ describe('MatApi', () => {
 			it('updates matrixConfig from MATRIX sub-command', async () => {
 				const onMatrix = vi.fn()
 				api.on('matrixConfig', onMatrix)
-				// Payload: [subCmd=0x00, selection=0x01]
-				await sendAndRespond(deviceAck(1, MatCmd.ANTENNA, [0x00, 0x01]))
+				respondWith(MatCmd.ANTENNA, [0x00, 0x01], 0x00)
 				await api.setAntennaMatrix()
-
 				expect(api.matrixConfig).toBe(AntennaMatrixChoices.Matrix8_4Driver)
 				expect(onMatrix).toHaveBeenCalledWith(AntennaMatrixChoices.Matrix8_4Driver)
 			})
 
 			it('updates zone active from ACTIVATE sub-command', async () => {
 				const zoneId = MatDst.ZONE2 as MatDstZones
-				// Payload: [subCmd=0x01, active=0x01]
-				const frame = buildFrame(zoneId, 0xfe, 1, CMD_ACK_OK, MatCmd.ANTENNA, [0x01, 0x01])
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x01, 0x01], zoneId)
 				await api.setAntennaActivate(zoneId)
-
 				expect(api.zone(zoneId)?.active).toBe(true)
 			})
 
 			it('updates zone diversity from DIVERSITY sub-command', async () => {
 				const zoneId = MatDst.ZONE1 as MatDstZones
-				// Payload: [subCmd=0x02, diversity=0x00 (A)]
-				const frame = buildFrame(zoneId, 0xfe, 1, CMD_ACK_OK, MatCmd.ANTENNA, [0x02, 0x00])
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x02, 0x00], zoneId)
 				await api.setAntennaDiversity(zoneId)
-
 				expect(api.zone(zoneId)?.diversity).toBe(AntennaDiversityChoices.A)
 			})
 
 			it('updates zone boost from BOOST sub-command', async () => {
 				const zoneId = MatDst.ZONE3 as MatDstZones
-				// Payload: [subCmd=0x03, boost=0x07 (AH)]
-				const frame = buildFrame(zoneId, 0xfe, 1, CMD_ACK_OK, MatCmd.ANTENNA, [0x03, 0x07])
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x03, 0x07], zoneId)
 				await api.setAntennaBoost(zoneId)
-
 				expect(api.zone(zoneId)?.boost).toBe(AntennaBoostChoices.AH)
 			})
 
 			it('updates antenna A gain from GAIN sub-command', async () => {
 				const zoneId = MatDst.ZONE1 as MatDstZones
-				// Payload: [subCmd=0x04, selection=0x00 (A), attenuation=10]
-				const frame = buildFrame(zoneId, 0xfe, 1, CMD_ACK_OK, MatCmd.ANTENNA, [0x04, 0x00, 0x0a])
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x04, 0x00, 0x0a], zoneId)
 				await api.setAntennaGain(zoneId)
-
 				expect(api.zone(zoneId)?.antenna.A.gain).toBe(10)
 			})
 
 			it('updates antenna B gain from GAIN sub-command', async () => {
 				const zoneId = MatDst.ZONE1 as MatDstZones
-				// Payload: [subCmd=0x04, selection=0x01 (B), attenuation=20]
-				const frame = buildFrame(zoneId, 0xfe, 1, CMD_ACK_OK, MatCmd.ANTENNA, [0x04, 0x01, 0x14])
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x04, 0x01, 0x14], zoneId)
 				await api.setAntennaGain(zoneId)
-
 				expect(api.zone(zoneId)?.antenna.B.gain).toBe(20)
 			})
 
 			it('parses BOOST_DIAG voltage and current as UINT16 LE', async () => {
 				const zoneId = MatDst.ZONE1 as MatDstZones
-				// From protocol doc: Voltage A = 12.27V = 0x2FEF → [0xEF, 0x2F] = 12271
-				// Current A = 87mA = 0x0057 → [0x57, 0x00]
-				const frame = buildFrame(zoneId, 0xfe, 1, CMD_ACK_OK, MatCmd.ANTENNA, [
-					0x06, // subCmd BOOST_DIAG
-					0xef,
-					0x2f, // Voltage A = 12271
-					0x57,
-					0x00, // Current A = 87
-					0xff,
-					0xff, // Voltage B = no sensor
-					0xff,
-					0xff, // Current B = no sensor
-				])
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x06, 0xef, 0x2f, 0x57, 0x00, 0xff, 0xff, 0xff, 0xff], zoneId)
 				await api.queryAntennaBoostDiag(zoneId)
-
 				const zone = api.zone(zoneId)
 				expect(zone?.antenna.A.voltage).toBe(12271)
 				expect(zone?.antenna.A.current).toBe(87)
@@ -1019,17 +1058,8 @@ describe('MatApi', () => {
 
 			it('maps BOOST_DIAG 0xFFFF to null for absent B-path sensor', async () => {
 				const zoneId = MatDst.ZONE1 as MatDstZones
-				const frame = buildFrame(
-					zoneId,
-					0xfe,
-					1,
-					CMD_ACK_OK,
-					MatCmd.ANTENNA,
-					[0x06, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff],
-				)
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x06, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff], zoneId)
 				await api.queryAntennaBoostDiag(zoneId)
-
 				const zone = api.zone(zoneId)
 				expect(zone?.antenna.B.voltage).toBeNull()
 				expect(zone?.antenna.B.current).toBeNull()
@@ -1039,8 +1069,7 @@ describe('MatApi', () => {
 				const onZone = vi.fn()
 				api.on('zone', onZone)
 				const zoneId = MatDst.ZONE1 as MatDstZones
-				const frame = buildFrame(zoneId, 0xfe, 1, CMD_ACK_OK, MatCmd.ANTENNA, [0x01, 0x01])
-				await sendAndRespond(frame)
+				respondWith(MatCmd.ANTENNA, [0x01, 0x01], zoneId)
 				await api.setAntennaActivate(zoneId)
 				expect(onZone).toHaveBeenCalled()
 			})
@@ -1142,18 +1171,20 @@ describe('MatApi', () => {
 			const onId = vi.fn()
 			api2.on('id', onId)
 
-			// Build a valid ID response then corrupt the checksum byte
-			const validFrame = deviceAck(1, MatCmd.ID, [...Buffer.from('MAT288\0'), 0x00, 0x01, 0x01])
-			const corrupted = Buffer.from(validFrame)
-			corrupted[corrupted.length - 2] ^= 0xff // flip the checksum byte
-
-			mockTCP.sendAsync.mockImplementation(async (_buf: Buffer) => {
+			mockTCP.sendAsync.mockImplementation(async (buf: Buffer) => {
+				const valid = buildFrame(0x00, 0xfe, sentToken(buf), CMD_ACK_OK, MatCmd.ID, [
+					...Buffer.from('MAT288\0'),
+					0x00,
+					0x01,
+					0x01,
+				])
+				const corrupted = Buffer.from(valid)
+				corrupted[corrupted.length - 2] ^= 0xff
 				tcpHandlers['data'](corrupted)
 				return true
 			})
 			await api2.queryId()
 
-			// State should still update despite checksum mismatch
 			expect(onId).toHaveBeenCalled()
 		})
 
@@ -1227,29 +1258,20 @@ describe('MatApi', () => {
 			const onId = vi.fn()
 			api.on('id', onId)
 
-			// Build a frame where the payload contains 0xC0, 0xC1, 0x7D
-			// so that byte stuffing is present in the wire frame
-			// We do this by creating a frame manually with those bytes stuffed
-			const rawPayload = [0xc0, 0xc1, 0x7d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-			const frame = buildFrame(0x00, 0xfe, 1, CMD_ACK_OK, MatCmd.ID, rawPayload)
-
-			// The frame should contain byte stuffing sequences
-			const frameBytes = Array.from(frame)
-			expect(frameBytes).toContain(0x7d) // ESC present
-
-			mockTCP.sendAsync.mockImplementation(async () => {
-				tcpHandlers['data'](frame)
+			mockTCP.sendAsync.mockImplementation(async (buf: Buffer) => {
+				const rawPayload = [0xc0, 0xc1, 0x7d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+				tcpHandlers['data'](buildFrame(0x00, 0xfe, sentToken(buf), CMD_ACK_OK, MatCmd.ID, rawPayload))
 				return true
 			})
 			await api.queryId()
 
-			// After unstuffing, the parser should have recovered the original 0xC0 byte
-			// The model would be '\xC0\xC1\x7D...' which is non-printable but correctly parsed
 			expect(onId).toHaveBeenCalledOnce()
 		})
 
-		it('zone() returns undefined for zones not yet reported', () => {
-			expect(api.zone(MatDst.ZONE5 as MatDstZones)).toBeUndefined()
+		it('all zones are populated after initial refresh', () => {
+			for (let z = 1; z <= 8; z++) {
+				expect(api.zone(z)).toBeDefined()
+			}
 		})
 
 		it('zone() returns state after first response for that zone', async () => {
