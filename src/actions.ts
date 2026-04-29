@@ -21,6 +21,7 @@ export enum ActionId {
 	SetAntennaDiversity = 'set_antenna_diversity',
 	SetAntennaBoost = 'set_antenna_boost',
 	SetAntennaGain = 'set_antenna_gain',
+	SaveParam = 'save_param',
 }
 
 export type ActionSchema = {
@@ -71,6 +72,10 @@ export type ActionSchema = {
 			selection: AntennaDiversityChoices
 			attenuation: number
 		}
+	}
+	[ActionId.SaveParam]: {
+		// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+		options: {}
 	}
 }
 
@@ -295,6 +300,15 @@ export function UpdateActions(self: WisycomMATInstance): void {
 					selection: action.options.selection,
 					attenuation: action.options.attenuation,
 				})
+			},
+		},
+		[ActionId.SaveParam]: {
+			name: 'Save Parameters',
+			description: 'Write all the parameters into the memory of device',
+			options: [],
+			callback: async (_action) => {
+				if (!self.api) throw new Error('MAT API not initialised')
+				await self.api.saveParam()
 			},
 		},
 	}

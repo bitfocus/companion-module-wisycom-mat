@@ -42,6 +42,10 @@ Zone dropdowns in actions and feedbacks are automatically updated to reflect the
 
 ## Actions
 
+### Save Parameters
+
+Write all the parameters into the memory of device.
+
 ### Set Name
 
 Set the name of the device or a specific antenna zone. Maximum 8 characters. Supports Companion variables.
