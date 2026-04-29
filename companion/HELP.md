@@ -274,6 +274,8 @@ Returns a value from a specific antenna zone. The **Field** dropdown determines 
 | Boost Current | Boost amplifier current in mA, or `null` if B path has no sensor                        |
 | Gain          | Attenuation value (0–63)                                                                |
 
+> **Note:** Antenna Boost Diagnostics are polled on a 30 second interval
+
 ---
 
 ### Antenna Zone Color _(Advanced)_
