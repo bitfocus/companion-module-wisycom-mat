@@ -17,7 +17,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/phillipivan/companion-module-wisycom-mat.git"
+		"url": "git+https://github.com/bitfocus/companion-module-wisycom-mat.git"
 	},
 	"dependencies": {
 		"@companion-module/base": "~2.0.4",

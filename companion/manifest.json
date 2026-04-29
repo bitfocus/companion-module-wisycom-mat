@@ -7,8 +7,8 @@
 	"description": "Wisycom MAT RF Matrix",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/phillipivan/companion-module-wisycom-mat.git",
-	"bugs": "https://github.com/phillipivan/companion-module-wisycom-mat/issues",
+	"repository": "git+https://github.com/bitfocus/companion-module-wisycom-mat.git",
+	"bugs": "https://github.com/bitfocus/companion-module-wisycom-mat/issues",
 	"maintainers": [
 		{
 			"name": "Phillip Ivan Pietruschka",
