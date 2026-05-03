@@ -130,6 +130,7 @@ export function UpdateActions(self: WisycomMATInstance): void {
 					default: 60,
 					min: 0,
 					max: 255,
+					asInteger: true,
 				},
 				{
 					type: 'number',
@@ -138,6 +139,7 @@ export function UpdateActions(self: WisycomMATInstance): void {
 					default: 128,
 					min: 0,
 					max: 255,
+					asInteger: true,
 				},
 			],
 			callback: async (action) => {
@@ -292,6 +294,7 @@ export function UpdateActions(self: WisycomMATInstance): void {
 					default: 0,
 					min: 0,
 					max: 63,
+					asInteger: true,
 				},
 			],
 			callback: async (action) => {
