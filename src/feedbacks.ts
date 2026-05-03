@@ -174,6 +174,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 				}
 			}
 		},
+		unsubscribe: (feedback) => unsub('versions', feedback.id, self),
 	}
 
 	feedbacks[FeedbackId.Leds] = {
@@ -188,6 +189,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 			sub('leds', feedback.id, self)
 			return self.api?.leds[feedback.options.field] ?? false
 		},
+		unsubscribe: (feedback) => unsub('leds', feedback.id, self),
 	}
 
 	feedbacks[FeedbackId.RfLevels] = {
@@ -208,6 +210,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 			const rf = self.api?.rfLevels[feedback.options.field] ?? null
 			return rf === null ? rf : rf / 100
 		},
+		unsubscribe: (feedback) => unsub('rfLevels', feedback.id, self),
 	}
 
 	feedbacks[FeedbackId.Temp] = {
@@ -221,6 +224,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 			sub('temp', feedback.id, self)
 			return self.api?.temp[feedback.options.field] ?? null
 		},
+		unsubscribe: (feedback) => unsub('temp', feedback.id, self),
 	}
 
 	feedbacks[FeedbackId.Voltage] = {
@@ -241,6 +245,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 			const volts = self.api?.voltage[feedback.options.field] ?? null
 			return volts === null ? volts : volts / 1000
 		},
+		unsubscribe: (feedback) => unsub('voltage', feedback.id, self),
 	}
 
 	feedbacks[FeedbackId.Display] = {
@@ -260,6 +265,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 			sub('display', feedback.id, self)
 			return self.api?.display[feedback.options.field] ?? null
 		},
+		unsubscribe: (feedback) => unsub('display', feedback.id, self),
 	}
 
 	feedbacks[FeedbackId.AntennaZone] = {
@@ -344,6 +350,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 				}
 			}
 		},
+		unsubscribe: (feedback) => unsub('zone', feedback.id, self),
 	}
 
 	feedbacks[FeedbackId.AntennaButtonColor] = {
@@ -368,6 +375,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 					throw new Error('Invalid Zone Color')
 			}
 		},
+		unsubscribe: (feedback) => unsub('zone', feedback.id, self),
 	}
 
 	self.setFeedbackDefinitions(feedbacks)
