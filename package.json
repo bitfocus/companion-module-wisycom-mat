@@ -21,7 +21,7 @@
 	},
 	"dependencies": {
 		"@companion-module/base": "~2.0.4",
-		"es-toolkit": "^1.46.0",
+		"es-toolkit": "^1.46.1",
 		"p-queue": "~9.2.0"
 	},
 	"devDependencies": {
