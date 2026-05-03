@@ -123,7 +123,7 @@ export type FeedbackSchema = {
 
 // ── Definition builder ────────────────────────────────────────────────────────
 
-export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefinitions<FeedbackSchema> {
+export function UpdateFeedbacks(self: WisycomMATInstance): void {
 	const zones = self.api ? zoneChoices(self.api) : []
 	const zone0 = zones[0]?.id ?? 1
 
@@ -371,5 +371,4 @@ export function UpdateFeedbacks(self: WisycomMATInstance): CompanionFeedbackDefi
 	}
 
 	self.setFeedbackDefinitions(feedbacks)
-	return feedbacks
 }
