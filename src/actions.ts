@@ -74,8 +74,7 @@ export type ActionSchema = {
 		}
 	}
 	[ActionId.SaveParam]: {
-		// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-		options: {}
+		options: Record<string, never>
 	}
 }
 
