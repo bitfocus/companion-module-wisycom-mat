@@ -358,6 +358,7 @@ export function UpdateFeedbacks(self: WisycomMATInstance): void {
 		description: 'Set button to match the antenna zone color',
 		type: 'advanced',
 		options: [{ type: 'dropdown', id: 'zone', label: 'Zone', choices: zones, default: zone0 }],
+		affectedProperties: ['bgcolor'],
 		callback: (feedback) => {
 			sub('zone', feedback.id, self)
 			const zone = self.api?.zone(feedback.options.zone)
