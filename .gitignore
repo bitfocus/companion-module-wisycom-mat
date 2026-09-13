@@ -3,6 +3,7 @@ package-lock.json
 /pkg
 /pkg.tgz
 /dist
+/coverage
 DEBUG-*
 /.yarn
 *.pdf
