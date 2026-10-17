@@ -78,10 +78,12 @@ export type FeedbackSchema = {
 	[FeedbackId.Id]: {
 		type: 'value'
 		options: { field: MatIdKeys }
+		result: string | number | null
 	}
 	[FeedbackId.Versions]: {
 		type: 'value'
 		options: { field: MatVersionsKeys }
+		result: string | number | null
 	}
 	[FeedbackId.Leds]: {
 		type: 'boolean'
@@ -90,18 +92,22 @@ export type FeedbackSchema = {
 	[FeedbackId.RfLevels]: {
 		type: 'value'
 		options: { field: MatRfLevelsKeys }
+		result: number | null
 	}
 	[FeedbackId.Temp]: {
 		type: 'value'
 		options: { field: MatTempsKeys }
+		result: number | null
 	}
 	[FeedbackId.Voltage]: {
 		type: 'value'
 		options: { field: MatVoltagesKeys }
+		result: number | null
 	}
 	[FeedbackId.Display]: {
 		type: 'value'
 		options: { field: MatDisplayKeys }
+		result: number | null
 	}
 	[FeedbackId.AntennaZone]: {
 		type: 'value'
@@ -112,6 +118,7 @@ export type FeedbackSchema = {
 			leds: AntennaLedsKeys
 			details: AntennaDetailsKeys
 		}
+		result: string | number | boolean | null
 	}
 	[FeedbackId.AntennaButtonColor]: {
 		type: 'advanced'
