@@ -1,11 +1,10 @@
-import type { MatApi, TypedDropdownChoice } from './api.js'
+import type { DropdownChoice } from '@companion-module/base'
+import type { MatApi } from './api.js'
 
 /**
  * Reserved characters for special use in MAT messages
  *
  */
-
-type EnumDropdownChoice<T extends number> = TypedDropdownChoice<T>
 
 export enum MatBofEof {
 	BOF = 0xc0,
@@ -155,7 +154,7 @@ export enum AntennaMatrixChoices {
 	Matrix2_4_2Driver = 0x02,
 }
 
-export const ANTENNA_MATRIX_CHOICES: Record<'MAT244' | 'MAT288', EnumDropdownChoice<AntennaMatrixChoices>[]> = {
+export const ANTENNA_MATRIX_CHOICES: Record<'MAT244' | 'MAT288', DropdownChoice<AntennaMatrixChoices>[]> = {
 	MAT288: [
 		{ id: AntennaMatrixChoices.Matrix8_1Driver, label: 'Diversity Combiner 8:1 (+7dB)' },
 		{ id: AntennaMatrixChoices.Matrix8_4Driver, label: 'Diversity Combiner 8:4 (0dB)' },
@@ -168,7 +167,7 @@ export const ANTENNA_MATRIX_CHOICES: Record<'MAT244' | 'MAT288', EnumDropdownCho
 	],
 }
 
-export function antennaMatrixChoices(mat: MatApi): EnumDropdownChoice<AntennaMatrixChoices>[] {
+export function antennaMatrixChoices(mat: MatApi): DropdownChoice<AntennaMatrixChoices>[] {
 	const model = mat.id.model.includes('244') ? 'MAT244' : 'MAT288'
 	return ANTENNA_MATRIX_CHOICES[model]
 }
@@ -188,7 +187,7 @@ export const ANTENNA_DIVERSITY_CHOICES = [
 	{ id: AntennaDiversityChoices.A, label: 'A' },
 	{ id: AntennaDiversityChoices.B, label: 'B' },
 	{ id: AntennaDiversityChoices.AB, label: 'A+B' },
-] as const satisfies EnumDropdownChoice<AntennaDiversityChoices>[]
+] as const satisfies DropdownChoice<AntennaDiversityChoices>[]
 
 /**
  * Antenna Boost Choices
@@ -217,17 +216,15 @@ export const ANTENNA_BOOST_CHOICES = [
 	{ id: AntennaBoostChoices.HB, label: 'High A + B' },
 	{ id: AntennaBoostChoices.AH, label: 'A + High B' },
 	{ id: AntennaBoostChoices.HH, label: 'High A + High B' },
-] as const satisfies EnumDropdownChoice<AntennaBoostChoices>[]
+] as const satisfies DropdownChoice<AntennaBoostChoices>[]
 
 // needs to be filtered when in Non diversity modes
 
-type AntennaBoostChoice = { id: AntennaBoostChoices; label: string }
-
-export function antennaBoostChoices(isDiversity: boolean): EnumDropdownChoice<AntennaBoostChoices>[] {
+export function antennaBoostChoices(isDiversity: boolean): DropdownChoice<AntennaBoostChoices>[] {
 	if (isDiversity) return ANTENNA_BOOST_CHOICES
 
 	return ANTENNA_BOOST_CHOICES.filter(
-		(choice: AntennaBoostChoice) =>
+		(choice: DropdownChoice<AntennaBoostChoices>) =>
 			choice.id === AntennaBoostChoices.OFF ||
 			choice.id === AntennaBoostChoices.H_ ||
 			choice.id === AntennaBoostChoices.A_,
@@ -247,7 +244,7 @@ export enum AntennaGainDiversity {
 export const ANTENNA_GAIN_DIVERSITY_CHOICES = [
 	{ id: AntennaGainDiversity.A, label: 'A' },
 	{ id: AntennaGainDiversity.B, label: 'B' },
-] as const satisfies EnumDropdownChoice<AntennaGainDiversity>[]
+] as const satisfies DropdownChoice<AntennaGainDiversity>[]
 
 export enum AntennaZoneColors {
 	OFF = 0x00,

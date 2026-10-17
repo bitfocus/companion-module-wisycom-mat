@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { createModuleLogger, TCPHelper } from '@companion-module/base'
+import { type DropdownChoice, createModuleLogger, TCPHelper } from '@companion-module/base'
 import PQueue from 'p-queue'
 import {
 	MatCmd,
@@ -128,21 +128,19 @@ export type AntennaZoneKeys = keyof AntennaZone
 
 // ── Dropdown Choices based on the device interface ──────────────────
 
-export type TypedDropdownChoice<T extends string | number> = { id: T; label: string }
-
 export const MAT_ID_CHOICES = [
 	{ id: 'model', label: 'Model' },
 	{ id: 'option', label: 'Option' },
 	{ id: 'class', label: 'Class' },
 	{ id: 'hwRev', label: 'Hardware Revision' },
-] as const satisfies TypedDropdownChoice<MatIdKeys>[]
+] as const satisfies DropdownChoice<MatIdKeys>[]
 
 export const MAT_VERSIONS_CHOICES = [
 	{ id: 'type', label: 'Type' },
 	{ id: 'minor', label: 'Minor Version' },
 	{ id: 'major', label: 'Major Version' },
 	{ id: 'muProcessor', label: 'µProcessor Version' },
-] as const satisfies TypedDropdownChoice<MatVersionsKeys>[]
+] as const satisfies DropdownChoice<MatVersionsKeys>[]
 
 export const MAT_LEDS_CHOICES = [
 	{ id: 'bootFailed', label: 'Boot Failed' },
@@ -155,45 +153,45 @@ export const MAT_LEDS_CHOICES = [
 	{ id: 'ac', label: 'AC' },
 	{ id: 'dc', label: 'DC' },
 	{ id: 'alarm', label: 'Alarm' },
-] as const satisfies TypedDropdownChoice<MatLedsKeys>[]
+] as const satisfies DropdownChoice<MatLedsKeys>[]
 
 export const MAT_RF_LEVELS_CHOICES = [
 	{ id: 'a1', label: 'RF 1A' },
 	{ id: 'b1', label: 'RF 1B' },
 	{ id: 'a2', label: 'RF 2A' },
 	{ id: 'b2', label: 'RF 2B' },
-] as const satisfies TypedDropdownChoice<MatRfLevelsKeys>[]
+] as const satisfies DropdownChoice<MatRfLevelsKeys>[]
 
 export const MAT_TEMPS_CHOICES = [
 	{ id: 'main', label: 'Main Board' },
 	{ id: 'rxA', label: 'RX A' },
 	{ id: 'rxB', label: 'RX B' },
-] as const satisfies TypedDropdownChoice<MatTempsKeys>[]
+] as const satisfies DropdownChoice<MatTempsKeys>[]
 
 export const MAT_VOLTAGES_CHOICES = [
 	{ id: 'ext', label: 'External DC' },
 	{ id: '_8mv', label: 'Main RF (+5v)' },
 	{ id: '_5mv', label: 'Main Logic (+5v)' },
 	{ id: '_12mv', label: 'Main PWR (+12v)' },
-] as const satisfies TypedDropdownChoice<MatVoltagesKeys>[]
+] as const satisfies DropdownChoice<MatVoltagesKeys>[]
 
 export const MAT_DISPLAY_CHOICES = [
 	{ id: 'timeout', label: 'Timeout' },
 	{ id: 'brightness', label: 'Brightness' },
-] as const satisfies TypedDropdownChoice<MatDisplayKeys>[]
+] as const satisfies DropdownChoice<MatDisplayKeys>[]
 
 export const ANTENNA_LEDS_CHOICES = [
 	{ id: 'pendingEvents', label: 'Pending Events' },
 	{ id: 'pendingErrors', label: 'Pending Errors' },
 	{ id: 'alarmBoost', label: 'Alarm Boost' },
 	{ id: 'zone', label: 'Zone Colour' },
-] as const satisfies TypedDropdownChoice<AntennaLedsKeys>[]
+] as const satisfies DropdownChoice<AntennaLedsKeys>[]
 
 export const ANTENNA_DETAILS_CHOICES = [
 	{ id: 'voltage', label: 'Boost Voltage (V)' },
 	{ id: 'current', label: 'Boost Current (mA)' },
 	{ id: 'gain', label: 'Gain' },
-] as const satisfies TypedDropdownChoice<AntennaDetailsKeys>[]
+] as const satisfies DropdownChoice<AntennaDetailsKeys>[]
 
 export const ANTENNA_ZONE_CHOICES = [
 	{ id: 'name', label: 'Name' },
@@ -202,7 +200,7 @@ export const ANTENNA_ZONE_CHOICES = [
 	{ id: 'diversity', label: 'Diversity' },
 	{ id: 'boost', label: 'Boost' },
 	{ id: 'antenna', label: 'Antenna' },
-] as const satisfies TypedDropdownChoice<AntennaZoneKeys>[]
+] as const satisfies DropdownChoice<AntennaZoneKeys>[]
 
 // ── Typed event map ───────────────────────────────────────────────────────────
 
